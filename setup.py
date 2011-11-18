@@ -8,8 +8,8 @@ setup(name='hc',
       author='Vernon Mauery',
       author_email='vernon@mauery.com',
       url='',
-      packages=['hc'],
-      package_dir={'hc': ''},
+      packages=['lhc'],
+      package_dir={'lhc': 'lhc'},
       scripts=['hc'],
      )
 
