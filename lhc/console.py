@@ -58,6 +58,8 @@ def get_tty():
     return os.readlink("/proc/self/fd/0")
 
 def set_title(tstring, showtty=True):
+    if "TERM" not in os.environ or "xterm" not in os.environ["TERM"]:
+        return
     if showtty:
         tty = "%s: " % get_tty()[5:]
     else:
