@@ -1416,9 +1416,10 @@ class Calculator(object):
     the os.urandom function to return a group of random bytes, then convert
     the bytes to a binary fraction expressed in decimal.
         """
-        numbytes = ceil(mp.prec/mpf(8)) + 1
+        numbytes = m.ceil(mp.prec/mpf(8)) + 1
         bytes = os.urandom(numbytes)
-        number = self.sum([ord(b)*mpf(256)**(-(i+1)) for i, b in enumerate(list(bytes))])
+        args = [ord(b)*mpf(256)**(-(i+1)) for i, b in enumerate(list(bytes))]
+        number = self.sum(*args)
         return number
 
     def unix_ts(self):
