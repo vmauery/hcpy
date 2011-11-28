@@ -189,7 +189,7 @@ class Calculator(object):
             "sqr"      : [self.square, 1],# Square x
             "neg"      : [self.negate, 1], # negative of x
             "mid"      : [self.mid, 1],   # Take midpoint of interval number
-            "sum"      : [self.Sum, 'x'],  # sum of top x values (depth sum for all)
+            "sum"      : [self.sum, 'x'],  # sum of top x values (depth sum for all)
             "!"        : [self.Factorial, 1],  # factorial
             "floor"    : [self.floor, 1], # Largest integer <= x
             "ceil"     : [self.ceil, 1],  # Smallest integer >= x
@@ -1017,7 +1017,7 @@ class Calculator(object):
                 return ExactIntegerFactorial(x)
         return m.factorial(x)
 
-    def Sum(self, *args):
+    def sum(self, *args):
         """
     Usage: x sum
 
