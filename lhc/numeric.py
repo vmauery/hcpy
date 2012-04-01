@@ -41,6 +41,7 @@ import time
 import re
 from string import strip
 from si import suffixes_ln
+import config
 
 try: from pdb import xx  # pdb.set_trace is xx; easy to find for debugging
 except: pass

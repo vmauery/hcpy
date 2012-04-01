@@ -44,6 +44,7 @@ import traceback
 import re as regex
 from tempfile import mkstemp
 from debug import *
+import config
 
 try: from pdb import xx  # pdb.set_trace is xx; easy to find for debugging
 except: pass
@@ -456,174 +457,24 @@ class Calculator(object):
             "a" : "1010", "b" : "1011", "c" : "1100", "d" : "1101", "e" : "1110",
             "f" : "1111"}
 
-        #---------------------------------------------------------------------------
-        # Configuration information.
-
-        self.cfg = {
-            # If any of these environment variables exist, execute the
-            # commands in them.
-            "environment" : ["HCPYINIT", "hcpyinit"],
-
-            # Angle mode:  must be either 'deg' or 'rad'
-            "angle_mode" : "rad",
-
-            # Integer mode: must be 'dec', 'hex', 'oct', 'bin', or 'ip'.
-            "integer_mode" : "dec",
-
-            # Prompt to be displayed for each input (may be empty)
-            "prompt" : "> ",
-
-            # If true, coerce means to change arguments' types as needed to
-            # calculate a function.  Otherwise, a ValueError exception will be
-            # thrown.
-            "coerce" : True,
-
-            # If true, we'll allow x/0 to be infinity as long as x != 0
-            "allow_divide_by_zero" : True,
-
-            # The calculator is capable of handling rational numbers.  If
-            # you'd rather a division of two integers result in a real number,
-            # set no_rationals to True.  The rat command toggles this setting.
-            "no_rationals" : True,
-
-            # For display of complex numbers.  Mode is either rect or polar.
-            "imaginary_mode" : "rect",
-            "imaginary_unit" : "i",
-            "imaginary_unit_first" : False,  # If true, 1+i3
-            "imaginary_space" : True,        # If true, 1 + 3i or (1, 3)
-            "ordered_pair" : False,          # If true, (1,3)
-            "polar_separator" : " <| ",      # Used in polar display
-            "degree_symbol" : "deg",         # chr(248) might be OK for cygwin bash
-            "infinity_symbol" : "inf",       # chr(236) might be OK for cygwin bash
-            "arg_digits" : 2,                # Separate formatting num digits for args
-            "arg_format" : "fix",            # Separate formatting type for arguments
-
-            # Factorials of integers <= this number are calculated exactly.
-            # Otherwise, the mpmath factorial function is used which returns either
-            # an mpf or mpc.  Set to zero if you want all factorials to be
-            # calculated exactly (warning:  this can result in long calculation
-            # times and lots of digits being printed).
-            "factorial_limit" : 20001,
-
-            # The following string is used to separate commands on the command
-            # input.  If this string is not in the command line, the command is
-            # parsed into separate commands based on whitespace.
-            "command_separator" : ";",
-
-            # Editor to use for viewing/changing files.  The temporary file is
-            # used with the editor.  If you wish to have the program use the
-            # tempfile standard library feature, leave tempfile as the empty
-            # string.
-            "editor" : "d:/bin/vim/vim71/vim.exe",
-            "tempfile" : "",
-            # How many items of the stack to show.  Use 0 for all.
-            "stack_display" : 0,
-
-            # If the following variable is True, we will persist our settings from
-            # run to run.  Otherwise, our configuration comes from this dictionary
-            # and the stack and registers are empty when starting.
-            "persist" : False,
-
-            # Name of files to persist our configuration, stack, and registers to.
-            # If None, there will be no persistence of the objects.  If set to a
-            # file name which contains no '/' characters, then the indicated object
-            # will be persisted to that file in the same directory where the
-            # executable is.  Otherwise, make sure it is a full path name.
-            "config_file" :           "",
-            "config_save_registers" : "",
-            "config_save_stack" :     "",
-
-            # The following variables determines how floating point numbers are
-            # formatted. Legitimate values are:  fix for fixed, sig for significant
-            # figures, sci for scientific, eng for engineering, engsi for
-            # engineering with SI prefixes after the number, and "none".  If
-            # "none", then the default mpmath string representation is used.
-            # Change the mpformat.py file if you wish to change things such as
-            # decimal point type, comma decoration, etc.
-            #
-            # NOTE:  there are mpFormat class variables in mpformat.py that you
-            # might want to examine and set to your tastes.  They are not included
-            # here because they will probably be set only once by a user.
-            "fp_format" : "sig",
-            "fp_digits" : 10,
-            "fp_show_plus_sign" : False,  # If true, "+3.4" instead of " 3.4"
-            "fp_comma_decorate" : True,   # If true, 1,234 instead of 1234
-            "fp_cuddle_si" : False,       # If true, "12.3k" instead of "12.3 k"
-
-            # Set how many digits of precision the mpmath library should use.
-            "prec" : 30,
-
-            # Settings for interval number display.  iva mode is a+-b; ivb mode is
-            # a(b%); ivc mode is <a, b>.
-            "iv_space" : True,              # a +- b vs. a+-b, a (b%) vs a(b%)
-            "iv_mode" : "b",
-            "iv_brackets" : ("<", ">"),     # <a, b>
-
-            # If brief is set to true, truncate numbers to fit on one line.
-            "brief" : True,
-
-            # Set the line width for the display.  Set it to a negative integer to
-            # instruct the program to try to first read the value from the COLUMNS
-            # environment variable; if not present, it will use the absolute value.
-            "line_width" : 75,
-
-            # String to use when an ellipsis is needed (used by brief command)
-            "ellipsis" : "."*3,
-
-            # If true, display fractions as mixed fractions.
-            "mixed_fractions" : True,
-
-            # If this number is not 1, then it is used for modular arithmetic.
-            "modulus" : 1,
-
-            # If this is true, then results are downcast to simpler types.
-            # Warning:  this may cause suprises.  For example, if prec is set to 15
-            # and you execute 'pi 1e100 *', you'll see an integer result.  This
-            # isn't a bug, but is a consequence of the finite number of digits of
-            # precision -- the downcast happens because int(1e100*pi) == 1e100*pi.
-            "downcasting" : False,
-
-            # The integers used by this program exhibit python-style division.
-            # This behavior can be surprising to a C programmer, because in
-            # python, (-3) // 8 is equal to -1 (this is called floor division);
-            # most C programmers would expect this to be zero.  Set the
-            # following variable to True if you want (-3) // 8 to be zero.
-            "C_division" : True,
-
-            # Scripts that can be called using the ! command are in the following
-            # directory.  Any python script in this directory will have its main()
-            # function called and the value that is returned will be pushed on the
-            # stack.  This lets you write auxiliary scripts that prompt you to help
-            # you get a number you need without cluttering up the commands or
-            # registers of this program.  Example:  an astronomy.py script could
-            # prompt you for which astronomical constant you wanted to use.  Set
-            # this entry to the empty string or None if you don't want this
-            # behavior.  You can also give the name of the function you want to
-            # be called.  This function will be called with the display object,
-            # which you can use to send messages to the user.
-            "helper_scripts" : "d:/p/math/hcpy/helpers",
-            "helper_script_function_name" : "main",
-        }
-
-        self.cfg_default = {}
-        self.cfg_default.update(self.cfg)
         self.RunChecks()
+        config.load()
         self.CheckEnvironment()
         self.GetConfiguration()
 
         if options.default_config:
             self.display.msg("Using default configuration only")
         if options.version:
-            self.display.msg("hcpy version 6 (17 Mar 2009)")
+            self.display.msg("hc version 7 (29 Mar 2012)")
 
     #---------------------------------------------------------------------------
     # Utility functions
 
     def use_modular_arithmetic(self, x, y):
-        return (isint(x) and isint(y) and abs(self.cfg["modulus"]) > 1)
+        return (isint(x) and isint(y) and abs(config.cfg["modulus"]) > 1)
 
     def TypeCheck(self, x, y):
-        if (not self.cfg["coerce"]) and (type(x) != type(y)):
+        if (not config.cfg["coerce"]) and (type(x) != type(y)):
             raise ValueError(self.argument_types % fln())
 
     def DownCast(self, x):
@@ -631,7 +482,7 @@ class Calculator(object):
         If x can be converted to an integer with no loss of information,
         do so.  If its a complex that can be converted to a real, do so.
         """
-        if self.cfg["downcasting"] == False:
+        if config.cfg["downcasting"] == False:
             return x
         if x == inf or x == -inf:
             return x
@@ -654,7 +505,7 @@ class Calculator(object):
         is typically done after calling inverse trig functions.
         """
         try:
-            if self.cfg["angle_mode"] == "deg":
+            if config.cfg["angle_mode"] == "deg":
                 if isinstance(x, m.mpc):  # Don't change complex numbers
                     return x
                 if isinstance(x, Zn): x = int(x)
@@ -669,7 +520,7 @@ class Calculator(object):
         is typically done before calling trig functions.
         """
         try:
-            if self.cfg["angle_mode"] == "deg":
+            if config.cfg["angle_mode"] == "deg":
                 if isinstance(x, m.mpc):  # Don't change complex numbers
                     return x
                 if isinstance(x, Zn): x = int(x)
@@ -688,7 +539,7 @@ class Calculator(object):
     Return the sum of the bottom two items on the stack (y + x)
         """
         if self.use_modular_arithmetic(x, y):
-            return (x + y) % self.cfg["modulus"]
+            return (x + y) % config.cfg["modulus"]
         self.TypeCheck(x, y)
         try:
             return y + x
@@ -705,7 +556,7 @@ class Calculator(object):
     Return the difference of the bottom two items on the stack (y - x)
         """
         if self.use_modular_arithmetic(x, y):
-            return (x - y) % self.cfg["modulus"]
+            return (x - y) % config.cfg["modulus"]
         self.TypeCheck(x, y)
         try:
             return y - x
@@ -719,7 +570,7 @@ class Calculator(object):
     Return the product of the bottom two items on the stack (y * x)
         """
         if self.use_modular_arithmetic(y, x):
-            return (y*x) % self.cfg["modulus"]
+            return (y*x) % config.cfg["modulus"]
         self.TypeCheck(y, x)
         try:
             return y*x
@@ -733,10 +584,10 @@ class Calculator(object):
     Return the quotient of the bottom two items on the stack (y / x)
         """
         if self.use_modular_arithmetic(x, y):
-            return (y//x) % self.cfg["modulus"]
+            return (y//x) % config.cfg["modulus"]
         self.TypeCheck(y, x)
         if x == 0:
-            if self.cfg["allow_divide_by_zero"]:
+            if config.cfg["allow_divide_by_zero"]:
                 if y > 0:
                     return m.inf
                 elif y < 0:
@@ -784,7 +635,7 @@ class Calculator(object):
     Return the integer division quotient of the bottom two items on the stack (y // x)
         """
         if self.use_modular_arithmetic(n, d):
-            return (Zn(n)//Zn(d)) % self.cfg["modulus"]
+            return (Zn(n)//Zn(d)) % config.cfg["modulus"]
         self.TypeCheck(n, d)
         if isint(n) and isint(d):
             if not isinstance(n, Zn): n = Zn(n)
@@ -887,7 +738,7 @@ class Calculator(object):
 
     Return the statistical combination of the bottom two items on the stack
         """
-        if (not self.cfg["coerce"]) and \
+        if (not config.cfg["coerce"]) and \
            (not isint(y)) and (not isint(x)):
             raise ValueError(self.argument_types % fln())
         y = Convert(y, INT)
@@ -900,7 +751,7 @@ class Calculator(object):
 
     Return the statistical permutation of the bottom two items on the stack
         """
-        if (not self.cfg["coerce"]) and \
+        if (not config.cfg["coerce"]) and \
            (not isint(y)) and (not isint(x)):
             raise ValueError(self.argument_types % fln())
         y = Convert(y, INT)
@@ -925,7 +776,7 @@ class Calculator(object):
     Returns the reciprocal of x (1/x)
         """
         if x == 0:
-            if self.cfg["allow_divide_by_zero"]:
+            if config.cfg["allow_divide_by_zero"]:
                 return inf
             else:
                 raise ValueError("%sDivision by zero" % fln())
@@ -1034,7 +885,7 @@ class Calculator(object):
                         y *= i
                     self.factorial_cache[x] = y
                     return y
-        limit = self.cfg["factorial_limit"]
+        limit = config.cfg["factorial_limit"]
         if limit < 0 or not isint(limit):
             raise SyntaxError("%sFactorial limit needs to be an integer >= 0" % fln())
         if isint(x) and x >= 0:
@@ -1629,8 +1480,7 @@ class Calculator(object):
         """
         self.ClearRegisters()
         self.ClearStack()
-        self.cfg.clear()
-        self.cfg.update(self.cfg_default)
+        config.load()
         self.ConfigChanged()
 
     def SetStackDisplay(self, x):
@@ -1643,7 +1493,7 @@ class Calculator(object):
         msg = "Stack display size be an integer >= 0"
         if int(x) == x:
             if x >= 0:
-                self.cfg["stack_display"] = int(x)
+                config.cfg["stack_display"] = int(x)
                 return None
             else:
                 self.display.msg(msg)
@@ -2043,9 +1893,9 @@ class Calculator(object):
         """
         if isint(x) and x > 0:
             mp.dps = int(x)
-            self.cfg["prec"] = int(x)
-            if self.cfg["fp_digits"] > mp.dps:
-                self.cfg["fp_digits"] = mp.dps
+            config.cfg["prec"] = int(x)
+            if config.cfg["fp_digits"] > mp.dps:
+                config.cfg["fp_digits"] = mp.dps
             if self.fp.num_digits > mp.dps:
                 self.fp.digits(mp.dps)
             return None
@@ -2061,7 +1911,7 @@ class Calculator(object):
         if int(x) == x:
             if x >= 0:
                 d = min(int(x), mp.dps)
-                self.cfg["fp_digits"] = d
+                config.cfg["fp_digits"] = d
                 self.fp.digits(min(int(x), mp.dps))
                 return None
             else:
@@ -2126,10 +1976,10 @@ class Calculator(object):
     Show the rationals as mixed fractions or not
         """
         if x != 0:
-            self.cfg["mixed_fractions"] = True
+            config.cfg["mixed_fractions"] = True
             Rational.mixed = True
         else:
-            self.cfg["mixed_fractions"] = False
+            config.cfg["mixed_fractions"] = False
             Rational.mixed = False
 
     def Debug(self, x):
@@ -2177,10 +2027,10 @@ class Calculator(object):
     If x, use commas to decorate displayed values
         """
         if x != 0:
-            self.cfg["fp_comma_decorate"] = True
+            config.cfg["fp_comma_decorate"] = True
         else:
-            self.cfg["fp_comma_decorate"] = False
-        mpFormat.comma_decorate = self.cfg["fp_comma_decorate"]
+            config.cfg["fp_comma_decorate"] = False
+        mpFormat.comma_decorate = config.cfg["fp_comma_decorate"]
 
     def width(self, x):
         """
@@ -2189,7 +2039,7 @@ class Calculator(object):
     Set display width to x (x must be > 20)
         """
         if isint(x) and x > 20:
-            self.cfg["line_width"] = int(x)
+            config.cfg["line_width"] = int(x)
         else:
             self.display.msg("width command requires an integer > 20")
 
@@ -2199,7 +2049,7 @@ class Calculator(object):
 
     Set rectangular mode for display of complex numbers and vectors
         """
-        self.cfg["imaginary_mode"] = "rect"
+        config.cfg["imaginary_mode"] = "rect"
 
     def Polar(self):
         """
@@ -2207,7 +2057,7 @@ class Calculator(object):
 
     Set polar mode for display of complex numbers and vectors
         """
-        self.cfg["imaginary_mode"] = "polar"
+        config.cfg["imaginary_mode"] = "polar"
 
     def fix(self):
         """
@@ -2215,7 +2065,7 @@ class Calculator(object):
 
     Set fixed-point mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "fix"
+        config.cfg["fp_format"] = "fix"
 
     def sig(self):
         """
@@ -2223,7 +2073,7 @@ class Calculator(object):
 
     Set significant digits mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "sig"
+        config.cfg["fp_format"] = "sig"
 
     def sci(self):
         """
@@ -2231,7 +2081,7 @@ class Calculator(object):
 
     Set scientific mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "sci"
+        config.cfg["fp_format"] = "sci"
 
     def eng(self):
         """
@@ -2239,7 +2089,7 @@ class Calculator(object):
 
     Set engineering mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "eng"
+        config.cfg["fp_format"] = "eng"
 
     def engsi(self):
         """
@@ -2247,7 +2097,7 @@ class Calculator(object):
 
     Set engineering mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "engsi"
+        config.cfg["fp_format"] = "engsi"
 
     def raw(self):
         """
@@ -2255,7 +2105,7 @@ class Calculator(object):
 
     Set raw mode for display of floating point numbers
         """
-        self.cfg["fp_format"] = "none"
+        config.cfg["fp_format"] = "raw"
 
     def dec(self):
         """
@@ -2263,7 +2113,7 @@ class Calculator(object):
 
     Set decimal mode for display of integers
         """
-        self.cfg["integer_mode"] = "dec"
+        config.cfg["integer_mode"] = "dec"
 
     def hex(self):
         """
@@ -2271,7 +2121,7 @@ class Calculator(object):
 
     Set hexadecimal mode for display of integers
         """
-        self.cfg["integer_mode"] = "hex"
+        config.cfg["integer_mode"] = "hex"
 
     def oct(self):
         """
@@ -2279,7 +2129,7 @@ class Calculator(object):
 
     Set octal mode for display of integers
         """
-        self.cfg["integer_mode"] = "oct"
+        config.cfg["integer_mode"] = "oct"
 
     def bin(self):
         """
@@ -2287,7 +2137,7 @@ class Calculator(object):
 
     Set binary mode for display of integers
         """
-        self.cfg["integer_mode"] = "bin"
+        config.cfg["integer_mode"] = "bin"
 
     def roman(self):
         """
@@ -2295,7 +2145,7 @@ class Calculator(object):
 
     Set roman numeral mode for display of integers
         """
-        self.cfg["integer_mode"] = "roman"
+        config.cfg["integer_mode"] = "roman"
 
     def iva(self):
         """
@@ -2303,7 +2153,7 @@ class Calculator(object):
 
     Set interval mode A for display of intervals
         """
-        self.cfg["iv_mode"] = "a"
+        config.cfg["iv_mode"] = "a"
         Julian.interval_representation = "a"
 
     def ivb(self):
@@ -2312,7 +2162,7 @@ class Calculator(object):
 
     Set interval mode B for display of intervals
         """
-        self.cfg["iv_mode"] = "b"
+        config.cfg["iv_mode"] = "b"
         Julian.interval_representation = "b"
 
     def ivc(self):
@@ -2321,7 +2171,7 @@ class Calculator(object):
 
     Set interval mode C for display of intervals
         """
-        self.cfg["iv_mode"] = "c"
+        config.cfg["iv_mode"] = "c"
         Julian.interval_representation = "c"
 
     def on(self):
@@ -2352,7 +2202,7 @@ class Calculator(object):
     values are converted behind the scenes to radians before
     passing them to the functions
         """
-        self.cfg["angle_mode"] = "deg"
+        config.cfg["angle_mode"] = "deg"
 
     def rad(self):
         """
@@ -2362,7 +2212,7 @@ class Calculator(object):
     used by the various trigonometric functions are assumed
     to be already expressed in radians.
         """
-        self.cfg["angle_mode"] = "rad"
+        config.cfg["angle_mode"] = "rad"
 
     def Rationals(self, x):
         """
@@ -2371,9 +2221,9 @@ class Calculator(object):
     If x, show rationals as rationals instead of decimals
         """
         if x != 0:
-            self.cfg["no_rationals"] = True
+            config.cfg["no_rationals"] = True
         else:
-            self.cfg["no_rationals"] = False
+            config.cfg["no_rationals"] = False
 
     def ToggleDowncasting(self, x):
         """
@@ -2382,9 +2232,9 @@ class Calculator(object):
     Toggle downcasting: if X, downcast floats to ints if precision permits
         """
         if x != 0:
-            self.cfg["downcasting"] = True
+            config.cfg["downcasting"] = True
         else:
-            self.cfg["downcasting"] = False
+            config.cfg["downcasting"] = False
 
     #---------------------------------------------------------------------------
     # Other functions
@@ -2398,9 +2248,9 @@ class Calculator(object):
         if isinstance(x, m.mpc) or isinstance(x, m.ctx_iv.ivmpf):
             raise ValueError("%sModulus cannot be a complex or interval number" % fln())
         if x == 0:
-            self.cfg["modulus"] = 1
+            config.cfg["modulus"] = 1
         else:
-            self.cfg["modulus"] = x
+            config.cfg["modulus"] = x
         return None
 
     def ClearRegisters(self):
@@ -2418,27 +2268,27 @@ class Calculator(object):
     Shows the current config
         """
         d = {True:"on", False:"off"}
-        per = d[self.cfg["persist"]]
-        st = str(self.cfg["stack_display"])
-        lw = self.cfg["line_width"]
-        mf = str(self.cfg["mixed_fractions"])
-        dc = d[self.cfg["downcasting"]]
-        sps = d[self.cfg["fp_show_plus_sign"]]
-        am = self.cfg["angle_mode"]
-        im = self.cfg["integer_mode"]
-        imm = self.cfg["imaginary_mode"]
-        sd = str(self.cfg["stack_display"])
-        fmt = self.cfg["fp_format"]
-        dig = str(self.cfg["fp_digits"])
-        ad = str(self.cfg["arg_digits"])
-        af = self.cfg["arg_format"]
+        per = d[config.cfg["persist"]]
+        st = str(config.cfg["stack_display"])
+        lw = config.cfg["line_width"]
+        mf = str(config.cfg["mixed_fractions"])
+        dc = d[config.cfg["downcasting"]]
+        sps = d[config.cfg["fp_show_plus_sign"]]
+        am = config.cfg["angle_mode"]
+        im = config.cfg["integer_mode"]
+        imm = config.cfg["imaginary_mode"]
+        sd = str(config.cfg["stack_display"])
+        fmt = config.cfg["fp_format"]
+        dig = str(config.cfg["fp_digits"])
+        ad = str(config.cfg["arg_digits"])
+        af = config.cfg["arg_format"]
         pr = str(mp.dps)
-        br = d[self.cfg["brief"]]
-        nr = d[self.cfg["no_rationals"]]
-        cd = d[self.cfg["fp_comma_decorate"]]
-        adz = d[self.cfg["allow_divide_by_zero"]]
-        iv = self.cfg["iv_mode"]
-        cdiv = d[self.cfg["C_division"]]
+        br = d[config.cfg["brief"]]
+        nr = d[config.cfg["no_rationals"]]
+        cd = d[config.cfg["fp_comma_decorate"]]
+        adz = d[config.cfg["allow_divide_by_zero"]]
+        iv = config.cfg["iv_mode"]
+        cdiv = d[config.cfg["C_division"]]
         dbg = d[get_debug()]
         if 1:
             s = '''Configuration:
@@ -2458,9 +2308,9 @@ class Calculator(object):
     Set display to truncate long numbers to one line (shown with ...)
         """
         if x != 0:
-            self.cfg["brief"] = True
+            config.cfg["brief"] = True
         else:
-            self.cfg["brief"] = False
+            config.cfg["brief"] = False
 
     ############################################################################
     # End of callback functions
@@ -2482,20 +2332,20 @@ class Calculator(object):
 
     def ConfigChanged(self):
         try:
-            self.fp.digits(self.cfg["fp_digits"])
+            self.fp.digits(config.cfg["fp_digits"])
         except:
             raise ValueError("%s'fp_digits' value in configuration is bad" % fln())
         try:
-            self.ap.digits(self.cfg["arg_digits"])
+            self.ap.digits(config.cfg["arg_digits"])
         except:
             raise ValueError("%s'arg_digits' value in configuration is bad" % fln())
-        mpFormat.comma_decorate = self.cfg["fp_comma_decorate"]
-        mpFormat.cuddle_si = self.cfg["fp_cuddle_si"]
-        mpFormat.explicit_plus_sign = self.cfg["fp_show_plus_sign"]
-        Rational.mixed = self.cfg["mixed_fractions"]
-        Zn().C_division = self.cfg["C_division"]
-        if isint(self.cfg["prec"]) and int(self.cfg["prec"]) > 0:
-            mp.dps = self.cfg["prec"]
+        mpFormat.comma_decorate = config.cfg["fp_comma_decorate"]
+        mpFormat.cuddle_si = config.cfg["fp_cuddle_si"]
+        mpFormat.explicit_plus_sign = config.cfg["fp_show_plus_sign"]
+        Rational.mixed = config.cfg["mixed_fractions"]
+        Zn().C_division = config.cfg["C_division"]
+        if isint(config.cfg["prec"]) and int(config.cfg["prec"]) > 0:
+            mp.dps = config.cfg["prec"]
         else:
             raise ValueError("%s'prec' value in configuration is bad" % fln())
 
@@ -2510,53 +2360,43 @@ class Calculator(object):
             return os.normalize(s)
 
     def SaveConfiguration(self):
-        if self.cfg["persist"]:
-            c, r, s = self.cfg["config_file"], self.cfg["config_save_registers"], \
-                      self.cfg["config_save_stack"]
+        if config.cfg["persist"]:
+            c = os.path.expanduser(os.path.join("~", ".config", "hc", "config"))
             msg = "%sCould not write %s to:\n  %s"
-            if c:
-                try:
-                    p = GetFullPath(c)
-                    WriteDictionary(p, "self.cfg", self.cfg)
-                except:
-                    self.display.msg(msg % (fln(), "config", p))
-            if r:
-                try:
-                    p = GetFullPath(r)
-                    WriteDictionary(p, "registers", self.registers)
-                except:
-                    self.display.msg(msg % (fln(), "registers", p))
-            if s:
-                try:
-                    p = GetFullPath(s)
-                    WriteList(p, "mystack", self.stack.stack)
-                except:
-                    self.display.msg(msg % (fln(), "stack", p))
+            try:
+                WriteSettings(c, config)
+            except:
+                self.display.msg(msg % (fln(), "config", c))
+        if config.cfg["persist_registers"]:
+            r = os.path.expanduser(os.path.join("~", ".config", "hc", "registers"))
+            try:
+                WriteSettings(r, self.registers)
+            except:
+                self.display.msg(msg % (fln(), "registers", r))
+        if config.cfg["persist_stack"]:
+            s = os.path.expanduser(os.path.join("~", ".config", "hc", "stack"))
+            try:
+                WriteList(s, self.stack.stack)
+            except:
+                self.display.msg(msg % (fln(), "stack", s))
 
     def GetLineWidth(self):
-        '''Try to get the current console's linewidth by reading the
-        COLUMNS environment variable.  If it's present, use it to set
-        cfg["line_width"].
-        '''
-        try:
-            self.cfg["line_width"] = int(os.environ["COLUMNS"]) - 1
-        except:
-            pass
+        config.cfg["line_width"],height = console.size()
 
     def GetConfiguration(self):
-        cf = self.cfg["config_file"]
+        import config
         self.GetLineWidth()
         self.ConfigChanged()
         us = "Using default configuration"
-        if self.cfg["persist"]:
-            c, r, s = self.cfg["config_file"], self.cfg["config_save_registers"], \
-                      self.cfg["config_save_stack"]
+        if config.cfg["persist"]:
+            c, r, s = config.cfg["config_file"], config.cfg["config_save_registers"], \
+                      config.cfg["config_save_stack"]
             if c and not self.use_default_config_only:
                 try:
                     d = {}
                     p = GetFullPath(c)
                     execfile(p, d, d)
-                    self.cfg = d["cfg"]
+                    config = d["cfg"]
                     self.ConfigChanged()
                 except:
                     msg = "%sCould not read and execute configuration file:" % fln() + \
@@ -2586,13 +2426,13 @@ class Calculator(object):
                     self.display.msg(msg)
 
     def DisplayStack(self):
-        size = self.cfg["stack_display"]
+        size = config.cfg["stack_display"]
         assert size >= 0 and isint(size)
         stack = self.stack._string(self.Format, size)
         if len(stack) > 0:
             self.display.msg(stack)
-        if self.cfg["modulus"] != 1:
-            self.display.msg(" (mod " + self.Format(self.cfg["modulus"])+ ")")
+        if config.cfg["modulus"] != 1:
+            self.display.msg(" (mod " + self.Format(config.cfg["modulus"])+ ")")
         if len(self.errors) > 0:
             self.display.msg("\n".join(self.errors))
             self.errors = []
@@ -2628,10 +2468,10 @@ class Calculator(object):
         ellipsize x, no matter the size.  This is passed in by the stack display
         function as it processes the stack.
         '''
-        width = abs(self.cfg["line_width"])
-        brief = self.cfg["brief"] and not item_is_x
-        e = self.cfg["ellipsis"]
-        im = self.cfg["integer_mode"]
+        width = abs(config.cfg["line_width"])
+        brief = config.cfg["brief"] and not item_is_x
+        e = config.cfg["ellipsis"]
+        im = config.cfg["integer_mode"]
         stack_header_allowance = 5
         if isinstance(x, ipaddr):
             s = str(x)
@@ -2674,40 +2514,36 @@ class Calculator(object):
                 s = self.EllipsizeString(s, size, e)
             return s
         elif isinstance(x, mpf):
-            s = str(x)
-            if self.cfg["fp_format"] != "none":
-                s = self.fp.format(x, self.cfg["fp_format"])
+            s = self.fp.format(x, config.cfg["fp_format"])
+            if s[-1] == ".": s = s[:-1]  # Remove a trailing dot
             if brief:
                 s = self.EllipsizeString(s, width - stack_header_allowance, e)
             return s
         elif isinstance(x, mpc):
-            space = self.cfg["imaginary_space"]
+            space = config.cfg["imaginary_space"]
             s = ""
             if space:
                 s = " "
-            sre = str(x.real)
-            sim = str(abs(x.imag))
-            if self.cfg["fp_format"] != "none":
-                sre = self.fp.format(x.real, self.cfg["fp_format"])
-                sim = self.fp.format(abs(x.imag), self.cfg["fp_format"]).strip()
-            if self.cfg["ordered_pair"]:
+            sre = self.fp.format(x.real, config.cfg["fp_format"])
+            sim = self.fp.format(abs(x.imag), config.cfg["fp_format"]).strip()
+            if config.cfg["ordered_pair"]:
                 if brief:
                     size = (width - stack_header_allowance)//2 - 4
                     sre = self.EllipsizeString(sre, size, e).strip()
                     sim = self.EllipsizeString(sim, size, e)
                 s = "(" + sre + "," + s + sim + ")"
             else:
-                mode = self.cfg["imaginary_mode"]
-                first = self.cfg["imaginary_unit_first"]
-                unit = self.cfg["imaginary_unit"]
+                mode = config.cfg["imaginary_mode"]
+                first = config.cfg["imaginary_unit_first"]
+                unit = config.cfg["imaginary_unit"]
                 if mode == "polar":
                     # Polar mode
-                    sep = self.cfg["polar_separator"]
-                    angle_mode = self.cfg["angle_mode"]
+                    sep = config.cfg["polar_separator"]
+                    angle_mode = config.cfg["angle_mode"]
                     mag = abs(x)
                     ang = arg(x)
                     if angle_mode == "deg":
-                        ang_sym = self.cfg["degree_symbol"]
+                        ang_sym = config.cfg["degree_symbol"]
                         ang *= 180/pi
                     else:
                         ang_sym = "rad"
@@ -2716,15 +2552,15 @@ class Calculator(object):
                             % angle_mode)
                     m = str(mag)
                     a = str(ang)
-                    if self.cfg["fp_format"] != "none":
-                        m = self.fp.format(mag, self.cfg["fp_format"])
-                        a = self.ap.format(ang, self.cfg["arg_format"])
+                    if config.cfg["fp_format"] != "raw":
+                        m = self.fp.format(mag, config.cfg["fp_format"])
+                        a = self.ap.format(ang, config.cfg["arg_format"])
                     if brief:
                         size = (width - stack_header_allowance)//2 - \
                                len(sep) - 4
                         mag = self.EllipsizeString(m, size, e)
                         ang = self.EllipsizeString(a, size, e)
-                    s = m + self.cfg["polar_separator"] + a + " " + ang_sym
+                    s = m + config.cfg["polar_separator"] + a + " " + ang_sym
                 else:
                     # Rectangular mode
                     if brief:
@@ -2788,10 +2624,10 @@ class Calculator(object):
             b = mpf(x.b)
             mid = mpf(x.mid)
             delta = mpf(x.delta)/2
-            f = self.cfg["fp_format"]
-            mode = self.cfg["iv_mode"]
+            f = config.cfg["fp_format"]
+            mode = config.cfg["iv_mode"]
             sp = ""
-            if self.cfg["iv_space"]:
+            if config.cfg["iv_space"]:
                 sp = " "
             if mode == "a":
                 mid = self.fp.format(mid, f)
@@ -2808,7 +2644,7 @@ class Calculator(object):
             elif mode == "c":
                 a = self.fp.format(a, f)
                 b = self.fp.format(b, f).strip()
-                br1, br2 = self.cfg["iv_brackets"]
+                br1, br2 = config.cfg["iv_brackets"]
                 s = br1 + a.strip() + "," + sp + b + br2
             else:
                 raise ValueError("%s'%s' is unknown iv_mode in configuration" % \
@@ -2842,7 +2678,7 @@ class Calculator(object):
             self.display.msg(msg)
             raise
 
-    def WriteDictionary(self, filename, name, dictionary):
+    def WriteSettings(self, filename, name, dictionary):
         try:
             f = open(filename, "wb")
             p = f.write
@@ -2889,7 +2725,7 @@ class Calculator(object):
         do this if we're not using the default configuation (-d option).
         '''
         if self.use_default_config_only: return
-        for var in self.cfg["environment"]:
+        for var in config.cfg["environment"]:
             if var in os.environ:
                 try:
                     finished = False
@@ -3082,7 +2918,7 @@ class Calculator(object):
             s = sys.stdin.readline()
         else:
             try:
-                line = raw_input(self.cfg["prompt"])
+                line = raw_input(config.cfg["prompt"])
             except KeyboardInterrupt:
                 print
                 sys.exit()
@@ -3270,7 +3106,7 @@ class Calculator(object):
     Lists the constants available for use by name
         """
         for a,k in self.constants.iteritems():
-            print "%s = %s" % (a, k.show(self.base, self.cfg["prec"], self.vector_mode, self.angle_mode))
+            print "%s = %s" % (a, k.show(self.base, config.cfg["prec"], self.vector_mode, self.angle_mode))
 
     def warranty(self):
         """

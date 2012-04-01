@@ -1,1 +1,12 @@
-__all__ = [ "hc", "console", "constants", "debug", "display", "mpformat", "numeric", "si", "stack"]
+__all__ = [
+    "hc",
+    "console",
+    "constants",
+    "debug",
+    "display",
+    "mpformat",
+    "numeric",
+    "si",
+    "stack",
+    "config",
+]
