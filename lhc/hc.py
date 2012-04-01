@@ -196,7 +196,7 @@ class Calculator(object):
             "abs"      : [self.abs, 1],   # Absolute value of x
             "arg"      : [self.arg, 1],# {"post" : Conv2Deg}],  # Argument of complex
             "ln"       : [self.ln, 1],    # Natural logarithm
-            "log2"      : [self.log2, 1],     # Base 2 logarithm
+            "log2"     : [self.log2, 1],     # Base 2 logarithm
             "log"      : [self.log10, 1], # Base 10 logarithm
             "exp"      : [self.exp, 1], # Exponential function
             "bits"     : [self.bits, 1], # calculate the number of bits required for this integer
@@ -272,8 +272,11 @@ class Calculator(object):
             "=net"     : [self.samenet, 2],  # check to see if y and x are on the same subnet
 
             # Other stuff
-            "?"        : [self.help, 0],  # Help command
-            "help"     : [self.help, 0],  # Help command
+            self.help.__name__: [self.help, 'match',
+                            {
+                                'regex': regex.compile(r"(?:help|[?])\s+(.+)?"),
+                                'grammar': "(('?' / 'help'),(ws,delimited_func)?)",
+                            }, ], # help
             "warranty" : [self.warranty, 0],  # Show warranty
             "quit"     : [self.quit, 0],  # Exit the program
             "deg"      : [self.deg, 0],  # Set degrees for angle mode
@@ -312,6 +315,11 @@ class Calculator(object):
             # integer modes
             "sx"       : [self.C_sX, 1],  # Unsigned n-bit integer mode
             "ux"       : [self.C_uX, 1],  # Signed n-bit integer mode
+            self.C_int.__name__: [self.C_int, 'match',
+                            {
+                                'regex': regex.compile(r"([su])([0-9]+)"),
+                                'grammar': "([su],[0-9]+)"
+                            }, ], # c int u32 style
             "dec"      : [self.dec, 0],  # Decimal display for integers
             "hex"      : [self.hex, 0],  # Hex display for integers
             "oct"      : [self.oct, 0],  # Octal for integers
@@ -327,6 +335,7 @@ class Calculator(object):
             "invn"     : [self.Incdf, 1],
 
         }
+        self.commands_dict['?'] = self.commands_dict['help']
         #t = datetime.now()
         #M.rand('init', 64)
         #M.rand('seed', (t.year+t.month+t.day)/(t.microsecond+1)+
@@ -348,18 +357,32 @@ class Calculator(object):
         defined_functions = ["'nop'"]
         funcs = self.commands_dict.keys()
         funcs.sort(reverse=True)
+        grammar_funcs = {}
         for f in funcs:
-            if f in ['+', '-', '*', '/', '%', '^', '&', '!']:
-                continue
-            defined_functions.append("'%s'" %f)
+            funcinf = self.commands_dict[f]
+            name = funcinf[0].__name__
+            if name not in defined_functions:
+                defined_functions.append(name)
+            if len(funcinf) == 3 and 'grammar' in funcinf[2]:
+                if name not in grammar_funcs:
+                    grammar_funcs[name] = [funcinf[2]['grammar']]
+                else:
+                    grammar_funcs[name].append(funcinf[2]['grammar'])
+            else:
+                if name not in grammar_funcs:
+                    grammar_funcs[name] = ["'%s'" %f,]
+                else:
+                    grammar_funcs[name].append("'%s'" %f)
+        functions_grammar = []
+        for name,func_vals in grammar_funcs.iteritems():
+            functions_grammar.append('        %s := %s' % (name, ' / '.join(func_vals)))
+        grammar_funcs = '\n'.join(functions_grammar)
+        # print defined_functions
         grammar = ''.join(["""
         calculator_grammar := statement / ws
-        statement := simple_statement / (simple_statement, ws, statement) / help_statement
-        help_statement := 'help',(ws,(delimited_func / operator))?
-        simple_statement := cint / delimited_func / constant / ipaddr / number / operator / (number, ows, operator)
-        cint := [us],[0-9]+
+        statement := simple_statement / (simple_statement, ws, statement)
+        simple_statement := delimited_func / constant / ipaddr / number
         constant := 'const'
-        operator := '+' / '*' / '/' / '-' / '%' / '^' / '&' / '!'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
         ipv6cidr := ipv6,'/',[0-9],[0-9]?,[0-9]?
@@ -398,8 +421,10 @@ class Calculator(object):
         ws := [ \n\t],ows
         delimited_func := (ws,func,ws) / (ws,func) / (func,ws) / func
         """,
-            "       func := %s" % ' / '.join(defined_functions),
+            "func := %s\n" % ' / '.join(defined_functions),
+            grammar_funcs,
         ])
+        # print grammar
         try:
             self.parser = generator.buildParser(grammar).parserbyname('calculator_grammar')
         except:
@@ -3100,9 +3125,16 @@ class Calculator(object):
             #line = line[next:]
             success, taglist, next = TextTools.tag(line, self.parser)
 
-    def prepare_args(self, fn, n):
+    def prepare_args(self, fn, inf):
+        if debug(): print "prepare_args(%s,%s)"%(fn,str(inf))
         args = []
         v = None
+        n = inf[1]
+        if len(inf) == 3 and n == 'match' and 'regex' in inf[2]:
+            matches = inf[2]['regex'].match(fn)
+            if matches:
+                return [ g for g in matches.groups() ]
+            return []
         if n == 'x':
             v = self.pop()
             if not isint(v):
@@ -3126,25 +3158,30 @@ class Calculator(object):
 
     def run(self):
         isiterable = lambda obj: getattr(obj, '__iter__', False)
-        cints = regex.compile(r"[su][0-9]+")
         while True:
             arg = ''
             try:
                 for arg,tag,line in self.token():
-                    # print arg,line,tag
-                    if arg in ['help', '?']:
-                        self.commands_dict['help'][0](line)
-                        break
-                    elif arg == "const":
+                    if debug(): print arg,line,tag
+                    if 'func' in tag:
+                        cmdidx = tag.index('func')
+                    else:
+                        cmdidx = False
+                    if cmdidx and tag[cmdidx+1] in self.commands_dict:
+                        command = tag[cmdidx+1]
+                    else:
+                        command = arg
+                    if arg == "const":
                         cv = self.commands_dict['const'][0](line)
                         if cv is not None:
                             self.push(cv)
                         break
-                    elif arg in self.commands_dict:
+                    elif command in self.commands_dict:
                         try:
-                            args = self.prepare_args(arg, self.commands_dict[arg][1])
+                            args = self.prepare_args(arg, self.commands_dict[command])
+                            if debug(): print args
                             try:
-                                retval = self.commands_dict[arg][0](*args)
+                                retval = self.commands_dict[command][0](*args)
                             except (ValueError, TypeError), e:
                                 retval = args
                                 if debug():
@@ -3163,8 +3200,6 @@ class Calculator(object):
                                 self.push(v)
                     elif arg in ['null', 'nop']:
                         pass
-                    elif cints.match(arg):
-                        self.C_int(arg[0], arg[1:])
                     else:
                         # this should be a number....
                         num = self.chomp(arg)
