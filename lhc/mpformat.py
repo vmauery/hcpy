@@ -161,7 +161,16 @@ class mpFormat(object):
         elif format_type == "engsi":
             return self.engsi(number)
         else:
-            return str(number)
+            sign = ''
+            s = str(number)
+            e = len(s) - 1
+            while e > 0 and s[e] == '0': e -= 1
+            s = s[:e+1]
+            if s[-1] == '.': s = s[:-1]
+            if number >= 0:
+                if mpFormat.implicit_plus_sign == True:  sign = " "
+                if mpFormat.explicit_plus_sign == True:  sign = "+"
+            return "%s%s" % (sign, s)
 
     def _pathological(self, number):
         '''Return a string if the number is not 'normal'.'''

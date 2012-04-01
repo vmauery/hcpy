@@ -130,8 +130,8 @@ class Stack(object):
         lens = len(s)
         for i in xrange(lens):
             if debug():
-                vtype = repr(s[i])[:16]
-                vtype += ' '*(16-len(vtype))
+                vtype = repr(s[i])[:32]
+                vtype = "%s%s" % (vtype, ' '*(32-len(vtype)))
                 m.append(fmt % { 'vtype': vtype, 'index': size - i, 'value': func(s[i], i==(lens-1))})
             else:
                 m.append(fmt % {'index': size - i, 'value': func(s[i], i==(lens-1))})

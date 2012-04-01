@@ -597,18 +597,16 @@ class Calculator(object):
             else:
                 raise ValueError("%sCan't divide by zero" % fln())
         if isint(y) and isint(x):
-            if self.cfg["no_rationals"]:
-                return y/x
-            else:
-                q = Rational(int(y), int(x))
-                if q.d == 1:
-                    return q.n
-                else:
-                    return q
+            if y.C_division or x.C_division:
+                return y // x
+            q = Rational(int(y), int(x))
+            if q.d == 1:
+                return q.n
+            return q
         try:
             return y/x
         except:
-            return 1/(x/y)
+            return self.reciprocal(x/y)
 
     def Mod(self, n, d):
         """
@@ -2502,11 +2500,15 @@ class Calculator(object):
                 s = self.EllipsizeString(s, width - stack_header_allowance, e)
             return s
         elif isinstance(x, Rational):
-            s = str(x)
-            if x >= Rational(0):
-                if mpFormat.implicit_plus_sign == True:  sign = " "
-                if mpFormat.explicit_plus_sign == True:  sign = "+"
-                s = sign + s
+            if config.cfg["no_rationals"]:
+                x = Zn(x.n)/Zn(x.d)
+                s = self.fp.format(x, config.cfg["fp_format"])
+            else:
+                s = str(x)
+                if x >= Rational(0):
+                    if mpFormat.implicit_plus_sign == True:  sign = " "
+                    if mpFormat.explicit_plus_sign == True:  sign = "+"
+                    s = sign + s
             if len(s) > width//2:
                 s = s.replace("/", " / ") # Makes / easier to see
             if brief:

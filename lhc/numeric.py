@@ -33,6 +33,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
+from __future__ import division
 from mpmath import mpf, mpc, mpi, ctx_iv, eps, mp, pi
 from mpformat import mpFormat, inf
 from debug import *
@@ -169,6 +170,7 @@ class Rational(object):
         return one/(self*(one/other))
 
     def __div__(self, other):
+        # print "rational::__div__", self, other, type(other)
         if other == 0:
             raise ZeroDivisionError("Divisor is zero")
         if isinstance(other, Rational):
@@ -203,6 +205,11 @@ class Rational(object):
                 return(sign + "%s %s/%s" % (whole, remainder, self.d))
 
     def __str__(self):
+        if self.d == 1:
+            return "%d" % self.n
+        if config.cfg["no_rationals"]:
+            v = Zn(self.n)/Zn(self.d)
+            return v.__str__()
         if Rational.mixed:
             return self._mixed()
         else:
@@ -630,6 +637,7 @@ class Zn(object):
         else:
             raise TypeError("%sCan't set integer from value '%s'" % \
                 (fln(), str(value)))
+        self.use_C_division = not not self.num_bits
         self._update()
 
     def _set_from_string(self, value):
@@ -654,13 +662,10 @@ class Zn(object):
 
     # Properties
     def get_C_division(self):
-        return Zn.use_C_division
+        return self.use_C_division
 
     def set_C_division(self, use_C_division):
-        if use_C_division != True and use_C_division != False:
-            msg = "%suse_C_division class variable must be True or False"
-            raise ValueError(msg % fln())
-        Zn.use_C_division = use_C_division
+        self.use_C_division = not not use_C_division
 
     C_division = property(get_C_division, set_C_division, \
         doc="Set to True for C type integer division")
@@ -682,8 +687,10 @@ class Zn(object):
             self.num_bits = bits
             if bits == 0:
                 self.base = 0 # Will cause 0 div if we use for % calc
+                self.use_C_division = False
             else:
                 self.base = 2**bits
+                self.use_C_division = True
             self._update()
 
     bits = property(get_bits, set_bits, \
@@ -1116,9 +1123,9 @@ class Zn(object):
         return x1 * y1
 
     def __div__(self, y):
-        #print "__div__(%d, %d)"%(self.value, y.value)
+        # print "__div__(%d, %d)"%(self.value, y.value)
         y1, x1 = self._auto_cast(y)
-        if Zn.use_C_division:
+        if self.use_C_division:
             if x1.is_signed == True:
                 sign = x1._sgn(x1.n)*x1._sgn(y1.n)
                 if x1.num_bits != 0:
@@ -1137,10 +1144,11 @@ class Zn(object):
             return Zn(x1.value//y1.value, proto=x1)
 
     def __idiv__(self, y):
+        # print "__idiv__(%d, %d)"%(self.value, y.value)
         y1, x1 = self._auto_cast(y)
         if not isinstance(y1, Zn) or not isinstance(x1, Zn):
             raise TypeError("Invalid types to integer __idiv__")
-        if Zn.use_C_division:
+        if self.use_C_division:
             sign_x = x1._sgn(x1.value)
             sign_y = x1._sgn(y1.value)
             x1.value = sign_x*sign_y*(abs(x1.value)//abs(y1.value))
@@ -1307,7 +1315,11 @@ class Zn(object):
         return Zn(~self.value)
 
     def __truediv__(self, y):
-        if isinstance(y, Zn): y = mpf(y.value)
+        # print "__truediv__(%d, %d)"%(self.value, y.value)
+        if isint(self) and isint(y) and (self.C_division or y.C_division):
+            return self.value / y.value
+        if isinstance(y, Zn):
+            y = mpf(y.value)
         return self.value / y
 
     def __pow__(self, y):
