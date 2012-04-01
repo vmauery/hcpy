@@ -439,8 +439,6 @@ class Calculator(object):
         #---------------------------------------------------------------------------
         # Global variables
         self.stdin_finished = False  # Flags when stdin has reached EOF
-        self.comment_line = "\xec\xeb"
-        self.eof = "\xed\xee"
         self.argument_types = "%sThe two arguments must be the same type"
         self.factorial_cache = {0:1, 1:1, 2:2}
         self.process_stdin = False   # -s If true, our input comes from stdin
@@ -1290,9 +1288,9 @@ class Calculator(object):
     the os.urandom function to return a group of random bytes, then convert
     the bytes to a binary fraction expressed in decimal.
         """
-        numbytes = ceil(mp.prec/mpf(8)) + 1
+        numbytes = mp.ceil(mp.prec/mpf(8)) + 1
         bytes = os.urandom(numbytes)
-        number = self.sum([ord(b)*mpf(256)**(-(i+1)) for i, b in enumerate(list(bytes))])
+        number = sum([ord(b)*mpf(256)**(-(i+1)) for i, b in enumerate(list(bytes))])
         return number
 
     def unix_ts(self):
