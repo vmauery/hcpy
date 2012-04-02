@@ -12,4 +12,11 @@ except ImportError as e:
     sys.exit(1)
 
 if __name__ == "__main__":
-	hc.main(sys.argv)
+    if '-g' in sys.argv:
+        hc.main(sys.argv)
+    else:
+        try:
+            hc.main(sys.argv)
+        except:
+            pass
+

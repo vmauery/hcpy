@@ -103,6 +103,8 @@ def nop(*args):
 
 class Calculator(object):
     def __init__(self, arguments, options):
+        if options.debug:
+            debug(1)
         self.errors = []
         self.stack = Stack()
         self.stack_index = True
@@ -3145,29 +3147,29 @@ parsing of things that should break
         """
         sys.exit();
 
-def ParseCommandLine():
+def ParseCommandLine(args):
     from optparse import OptionParser
     usage = "usage: %prog [options]"
     descr = "Command line RPN calculator"
     parser = OptionParser(usage, description=descr)
-    c,d,s,r,t,v = ("Check that commands have help info",
+    c,d,s,r,g,v = ("Check that commands have help info",
                    "Use default configuration in hc.py file only",
                    "Take input from stdin",
                    "Read input from file",
-                   "Exit with status 1 if = or == are False",
+                   "Start with debug enabled",
                    "Display program version")
     parser.add_option("-c", "--run-checks", action="store_true", help=c)
     parser.add_option("-d", "--default-config", action="store_true", help=d)
     parser.add_option("-s", "--read-stdin", action="store_true", help=s)
     parser.add_option("-r", "--read-file", dest="file", help=r)
-    parser.add_option("-t", "--testing-mode", action="store_true", help=t)
+    parser.add_option("-g", "--debug", action="store_true", help=g)
     parser.add_option("-v", "--version", action="store_true", help=v)
-    return parser.parse_args(args=None, values=None)
+    return parser.parse_args(args, values=None)
 
 def main(argv):
     finished = False
     status = None
-    opt, arg = ParseCommandLine()
+    opt, arg = ParseCommandLine(argv)
     calculator = Calculator(arg, opt)
     try:
         calculator.run()
