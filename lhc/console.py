@@ -60,6 +60,6 @@ def get_tty():
 def set_title(tstring):
     if "TERM" not in os.environ or "xterm" not in os.environ["TERM"]:
         return
-    tty = "%s: " % get_tty()[5:]
+    tty = get_tty()[5:]
     sys.stdout.write("\x1b]2;%s\x07" % (tstring % { 'tty': tty } ))
 

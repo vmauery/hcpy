@@ -14,7 +14,7 @@ defcfg = {
     "integer_mode" : "dec",
 
     # title to display on console for xterms and stuff
-    "console_title" : "%(tty)s: Vrnn's Smrt Clcltr",
+    "console_title" : "%(tty)s: hc",
 
     # Prompt to be displayed for each input (may be empty)
     "prompt" : "> ",
