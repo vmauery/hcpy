@@ -203,10 +203,12 @@ class Calculator(object):
             "bits"     : [self.bits, 1], # calculate the number of bits required for this integer
             "db"       : [self.db, 1], # take a number in db and express it as a std ratio
             "bd"       : [self.bd, 1], # take a ratio and express it in db
+            #"=@"       : [self.store, 1], # store value in register
 
             # 0-nary functions
             "rand"     : [self.rand, 0],  # Uniform random number
             "ts"       : [self.unix_ts, 0], # return unix timestamp
+            #"@"        : [self.recall, 0],  # recall register value
 
             # trig functions
             "sin"      : [self.sin, 1],   # {"pre"  : self.Conv2Rad}],
@@ -464,6 +466,8 @@ class Calculator(object):
             self.display.msg("Using default configuration only")
         if options.version:
             self.display.msg("hc version 7 (29 Mar 2012)")
+        if config.cfg['console_title'] is str:
+            console.set_title(config.cfg['console_title'])
 
     #---------------------------------------------------------------------------
     # Utility functions
@@ -3163,7 +3167,6 @@ def main(argv):
     finished = False
     status = None
     opt, arg = ParseCommandLine()
-    console.set_title("Vrnn's Smrt Clcltr")
     calculator = Calculator(arg, opt)
     try:
         calculator.run()

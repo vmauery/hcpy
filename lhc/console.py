@@ -57,12 +57,9 @@ def size():
 def get_tty():
     return os.readlink("/proc/self/fd/0")
 
-def set_title(tstring, showtty=True):
+def set_title(tstring):
     if "TERM" not in os.environ or "xterm" not in os.environ["TERM"]:
         return
-    if showtty:
-        tty = "%s: " % get_tty()[5:]
-    else:
-        tty = ''
-    sys.stdout.write("\x1b]2;%s%s\x07" % (tty, tstring))
+    tty = "%s: " % get_tty()[5:]
+    sys.stdout.write("\x1b]2;%s\x07" % (tstring % { 'tty': tty } ))
 
