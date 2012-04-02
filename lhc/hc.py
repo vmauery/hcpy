@@ -887,7 +887,7 @@ class Calculator(object):
         if isint(x) and x >= 0:
             if limit == 0 or (limit > 0 and x < limit):
                 return ExactIntegerFactorial(x)
-        return m.factorial(x)
+        return m.factorial(int(x))
 
     def Sum(self, *args):
         """
@@ -2438,6 +2438,9 @@ class Calculator(object):
         with the ellipsis inserted is <= the desired length.  Note:  the
         string returned will be of length desired_length or one less.
         '''
+        if type(s) is not str:
+            print "eek... EllipsizeString did not receive a string, but a %s"%type(s)
+            s = str(s)
         had_exponent = "e" in s or "E" in s
         had_dp = "." in s
         if len(s) <= desired_length:
