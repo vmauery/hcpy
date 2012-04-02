@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #----------------------------------
 # Python library stuff
 from __future__ import division
+import __builtin__
 import sys, getopt, os, time, readline
 from socket import htonl
 from atexit import register as atexit
@@ -445,7 +446,7 @@ class Calculator(object):
         self.stdin_finished = False  # Flags when stdin has reached EOF
         self.argument_types = "%sThe two arguments must be the same type"
         self.factorial_cache = {0:1, 1:1, 2:2}
-        self.process_stdin = False   # -s If true, our input comes from stdin
+        self.process_stdin = not sys.stdin.isatty()
         self.run_checks = False      # -c Run checks
         self.quiet = False           # -q If true, don't print initial message
         self.testing = False         # -t If true, exit with nonzero status if x!=y
@@ -468,7 +469,8 @@ class Calculator(object):
             self.display.msg("Using default configuration only")
         if options.version:
             self.display.msg("hc version 7 (29 Mar 2012)")
-        if config.cfg['console_title'] is str:
+        if not self.process_stdin and \
+                __builtin__.type(config.cfg['console_title']) is str:
             console.set_title(config.cfg['console_title'])
 
     #---------------------------------------------------------------------------
@@ -2431,7 +2433,7 @@ class Calculator(object):
     def DisplayStack(self):
         size = config.cfg["stack_display"]
         assert size >= 0 and isint(size)
-        stack = self.stack._string(self.Format, size)
+        stack = self.stack._string(self.Format, size, not self.process_stdin)
         if len(stack) > 0:
             self.display.msg(stack)
         if config.cfg["modulus"] != 1:
@@ -2923,9 +2925,11 @@ class Calculator(object):
 
     def read_line(self, stream=None):
         if stream:
-            s = stream.readline()
+            line = stream.readline()
         elif self.process_stdin:
-            s = sys.stdin.readline()
+            line = sys.stdin.readline()
+            if len(line) == 0:
+                sys.exit()
         else:
             try:
                 line = raw_input(config.cfg["prompt"])
@@ -3152,15 +3156,13 @@ def ParseCommandLine(args):
     usage = "usage: %prog [options]"
     descr = "Command line RPN calculator"
     parser = OptionParser(usage, description=descr)
-    c,d,s,r,g,v = ("Check that commands have help info",
+    c,d,r,g,v = ("Check that commands have help info",
                    "Use default configuration in hc.py file only",
-                   "Take input from stdin",
                    "Read input from file",
                    "Start with debug enabled",
                    "Display program version")
     parser.add_option("-c", "--run-checks", action="store_true", help=c)
     parser.add_option("-d", "--default-config", action="store_true", help=d)
-    parser.add_option("-s", "--read-stdin", action="store_true", help=s)
     parser.add_option("-r", "--read-file", dest="file", help=r)
     parser.add_option("-g", "--debug", action="store_true", help=g)
     parser.add_option("-v", "--version", action="store_true", help=v)

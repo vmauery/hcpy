@@ -111,7 +111,7 @@ class Stack(object):
             raise IndexError("%s" % fln() + "Stack size is smaller than %d" % (n+1))
         return self.stack[n - 1 - i]
 
-    def _string(self, func, size=0):
+    def _string(self, func, size=0, show_prefix=True):
         '''Used to pretty print the stack.  func should be a function that
         will format a number.  If size is nonzero, only display that many
         items.  Note:  we make a copy of the stack so we can't possibly
@@ -124,8 +124,10 @@ class Stack(object):
         s.reverse()
         if debug():
             fmt = "%%(vtype)s | %%(index) %dd: %%(value)s" % (2+int(log10(max(len(s),1))))
-        else:
+        elif show_prefix:
             fmt = "%%(index) %dd: %%(value)s" % (2+int(log10(max(len(s),1))))
+        else:
+            fmt = "%(value)s"
         m = []
         lens = len(s)
         for i in xrange(lens):
