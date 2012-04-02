@@ -350,12 +350,12 @@ class Calculator(object):
         # check for dir and file
         # consider adding tab completion
         try:
-            os.makedirs(os.path.expanduser('~')+'/.pycalc')
+            os.makedirs(os.path.expanduser('~')+'/.config/hc')
         except OSError:
             pass
         if hasattr(readline, "read_history_file"):
             try:
-                readline.read_history_file(os.path.expanduser('~')+'/.pycalc/history')
+                readline.read_history_file(os.path.expanduser('~')+'/.config/hc/history')
             except IOError:
                 pass
             atexit(self.cleanup)
@@ -2913,7 +2913,7 @@ class Calculator(object):
 
     def cleanup(self):
         self.SaveConfiguration()
-        readline.write_history_file(os.path.expanduser('~')+'/.pycalc/history')
+        readline.write_history_file(os.path.expanduser('~')+'/.config/hc/history')
 
     def push(self, val):
         if val is None:
