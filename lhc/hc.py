@@ -206,12 +206,21 @@ class Calculator(object):
             "bits"     : [self.bits, 1], # calculate the number of bits required for this integer
             "db"       : [self.db, 1], # take a number in db and express it as a std ratio
             "bd"       : [self.bd, 1], # take a ratio and express it in db
-            #"=@"       : [self.store, 1], # store value in register
+            self.store.__name__: [self.store, 'match',
+                            {
+                                'regex': regex.compile(r"=@([a-zA-Z])"),
+                                'grammar': "('=@',[a-zA-Z])",
+                                'args': 2,
+                            }, ], # store register
 
             # 0-nary functions
             "rand"     : [self.rand, 0],  # Uniform random number
             "ts"       : [self.unix_ts, 0], # return unix timestamp
-            #"@"        : [self.recall, 0],  # recall register value
+            self.recall.__name__: [self.recall, 'match',
+                            {
+                                'regex': regex.compile(r"@([a-zA-Z])"),
+                                'grammar': "('@',[a-zA-Z])",
+                            }, ], # recall register
 
             # trig functions
             "sin"      : [self.sin, 1],   # {"pre"  : self.Conv2Rad}],
@@ -281,7 +290,7 @@ class Calculator(object):
             self.help.__name__: [self.help, 'match',
                             {
                                 'regex': regex.compile(r"(?:help|[?])\s+(.+)?"),
-                                'grammar': "(('?' / 'help'),(ws,delimited_func)?)",
+                                'grammar': "(('?' / 'help'),(ws,([_a-zA-Z0-9]+ / delimited_func))?)",
                             }, ], # help
             "warranty" : [self.warranty, 0],  # Show warranty
             "quit"     : [self.quit, 0],  # Exit the program
@@ -1230,6 +1239,24 @@ class Calculator(object):
         """
         return 10 * self.log10(x)
 
+    def store(self, x, r):
+        """
+    Usage: x =@R
+
+    Stores x in register R where R is [a-zA-Z]
+        """
+        self.registers[r] = x
+
+    def recall(self, r):
+        """
+    Usage: @R
+
+    Recall register R to stack where R is [a-zA-Z]
+        """
+        if r not in self.registers:
+            return None
+        return self.registers[r]
+
     def abs(self, x):
         """
     Usage: x abs
@@ -1695,7 +1722,11 @@ class Calculator(object):
         """
     Usage: x cast
 
-    Returns x casted as an int of the current "C" stype integer type
+    Returns x casted as an int of the current "C" integer type.  Ideally x
+    should be an integer already, but if not, an attempt will be made to
+    cast it as an integer automatically.
+
+    See also C_int
         """
         return Zn(int(x))
 
@@ -2792,6 +2823,16 @@ class Calculator(object):
         return status_ok
 
     def C_int(self, cmd, val):
+        """
+    Usage: sX or uX where X is is an integer
+           's' for signed integers and 'u' for unsigned integers
+           sX -> set C signed integer mode with bits defined by the
+                value specified as X
+           s5 -> set C signed integer mode with 5 bits
+           u8 -> set C unsigned integer mode with 8 bits
+
+           See also: cast
+        """
         try:
             n = int(val)
         except:
@@ -2983,7 +3024,11 @@ class Calculator(object):
         if len(inf) == 3 and n == 'match' and 'regex' in inf[2]:
             matches = inf[2]['regex'].match(fn)
             if matches:
-                return [ g for g in matches.groups() ]
+                args = [ g for g in matches.groups() ]
+                if 'args' in inf[2]:
+                    while len(args) < inf[2]['args']:
+                        args.insert(0, self.pop())
+                return args
             return []
         if n == 'x':
             v = self.pop()
@@ -3083,10 +3128,17 @@ class Calculator(object):
     Lists the functions implemented or displays help for the
     requested function
         """
+
         if args is not None:
             args = args.split()
             if args:
                 arg = args[0]
+                if arg not in self.commands_dict:
+                    ok, tags, next = TextTools.tag(arg, self.parser)
+                    tags = self.flatten_tags(tags)
+                    # print ok, tags, next
+                    if ok and 'func' in tags:
+                        arg = tags[tags.index('func')+1]
                 if arg in self.commands_dict:
                     if self.commands_dict[arg][0].__doc__ is None:
                         print "No help for %s" % arg
