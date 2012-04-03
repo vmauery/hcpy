@@ -396,7 +396,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement := delimited_func / constant / ipaddr / number
+        simple_statement := delimited_func / constant / ipaddr / numeric
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
@@ -404,9 +404,9 @@ class Calculator(object):
         ipv4cidr := ipv4,'/',[0-9],[0-9]?
         ipv6 := '::1' / '::' / ((hex_chars,':')+,(':'?,hex_chars)+)
         ipv4 := [0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?
-        number := roman_number / rational_number / scaler_number / compound_number
-        roman_number := roman_numeral / roman_numeral,roman_numeral
-        roman_numeral := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
+        numeric := roman_numeral / rational_number / scaler_number / compound_number
+        roman_numeral := roman_numeral_digit / roman_numeral_digit,roman_numeral_digit
+        roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
         rational_number := dec_whole , '/' , dec_whole
         compound_number := vector / array
         scaler_number := julian / complex_number / imag_number / real_number
@@ -459,8 +459,7 @@ class Calculator(object):
         self.run_checks = False      # -c Run checks
         self.quiet = False           # -q If true, don't print initial message
         self.testing = False         # -t If true, exit with nonzero status if x!=y
-        self.tee_is_on = False       # True when logging to a file
-        self.use_default_config_only = False
+        self.use_default_config_only = options.default_config
 
         # Used for binary conversions
         self.hexdigits = {
