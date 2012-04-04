@@ -396,7 +396,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement := delimited_func / constant / ipaddr / numeric
+        simple_statement := constant / ipaddr / numeric / delimited_func
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
@@ -404,9 +404,9 @@ class Calculator(object):
         ipv4cidr := ipv4,'/',[0-9],[0-9]?
         ipv6 := '::1' / '::' / ((hex_chars,':')+,(':'?,hex_chars)+)
         ipv4 := [0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?
-        numeric := roman_numeral / rational_number / scaler_number / compound_number
-        roman_numeral := roman_numeral_digit / roman_numeral_digit,roman_numeral_digit
-        roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
+        numeric := rational_number / scaler_number / compound_number
+        # roman_numeral := roman_numeral_digit / roman_numeral_digit,roman_numeral_digit
+        # roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
         rational_number := dec_whole , '/' , dec_whole
         compound_number := vector / array
         scaler_number := julian / complex_number / imag_number / real_number
