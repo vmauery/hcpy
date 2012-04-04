@@ -2234,7 +2234,7 @@ cre=r'''
 '''
 # Pure imaginary, xi or ix
 I1 = cre % ("^", "?", "", "i$")
-I2 = cre % ("^", "?", "i", "$")
+I2 = cre % ("^", "?", "[ij]", "$")
 
 # Reals
 R = cre % ("^", "?", "", "$")
@@ -2445,6 +2445,22 @@ class Number(object):
         return None
 
     def q(self, s):
+        mo = real.match(s)
+        if mo:
+            sign,digits,exp = mo.groups()
+            if sign is not None:
+                digits = ''.join([sign,digits])
+            idx = digits.find('.')
+            d = 1
+            if idx >= 0:
+                frac = digits[idx+1:]
+                d = 10 ** len(frac)
+                n = int("%s%s" % (digits[:idx], frac))
+            else:
+                n = int(digits)
+            if exp is not None:
+                n *= 10**int(exp[1:])
+            return Rational(n, d)
         mo = rational.match(s)
         if mo:
             g = [i for i in mo.groups() if i]
