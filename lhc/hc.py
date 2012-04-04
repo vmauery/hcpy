@@ -2541,7 +2541,7 @@ class Calculator(object):
             return s
         elif isinstance(x, Rational):
             if config.cfg["no_rationals"]:
-                x = Zn(x.n)/Zn(x.d)
+                x = mpf(x.n)/mpf(x.d)
                 s = self.fp.format(x, config.cfg["fp_format"])
             else:
                 s = str(x)

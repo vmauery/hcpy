@@ -208,7 +208,7 @@ class Rational(object):
         if self.d == 1:
             return "%d" % self.n
         if config.cfg["no_rationals"]:
-            v = Zn(self.n)/Zn(self.d)
+            v = mpf(self.n)/mpf(self.d)
             return v.__str__()
         if Rational.mixed:
             return self._mixed()
