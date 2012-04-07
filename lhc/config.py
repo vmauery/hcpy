@@ -36,7 +36,7 @@ defcfg = {
     "imaginary_mode" : "rect",
     "imaginary_unit" : "i",
     "imaginary_unit_first" : False,  # If true, 1+i3
-    "imaginary_space" : True,        # If true, 1 + 3i or (1, 3)
+    "imaginary_space" : False,       # If true, 1 + 3i or (1, 3)
     "ordered_pair" : False,          # If true, (1,3)
     "polar_separator" : " <| ",      # Used in polar display
     "degree_symbol" : "deg",         # chr(248) might be OK for cygwin bash
