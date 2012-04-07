@@ -2980,11 +2980,12 @@ class Calculator(object):
             if len(line) == 0:
                 sys.exit()
         else:
-            try:
-                line = raw_input(config.cfg["prompt"])
-            except KeyboardInterrupt:
-                print
-                sys.exit()
+            while True:
+                try:
+                    line = raw_input(config.cfg["prompt"])
+                    break
+                except KeyboardInterrupt:
+                    print '^C'
         # it looks like readline automatically adds stuff to history
         #readline.add_history(line)
         if line and line[-1] == nl:
