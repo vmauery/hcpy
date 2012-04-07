@@ -2309,6 +2309,101 @@ ip6 = re.compile(r"""
     ^(:(:[0-9a-f]{1,4}){1,5}:(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3})$
 """, re.X | re.I)
 
+listre = re.compile(r"\s*[{]([^}]*)[}]\s*")
+
+class List(object):
+    def __init__(self, items):
+        # should we check to see that all the items are real numbers?
+        # we cannot really support complex numbers, but the grammar
+        # does not allow them at this time anyway...
+        self.items = items
+
+    def __abs__(self):
+        n = len(self.items)
+        P = mpf('1')
+        for v in self.items:
+            P *= v
+        return root(P)
+
+    def __neg__(self):
+        return List([ -x for x in self.items ])
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __add__(self, other):
+        if isinstance(other, List):
+            return List(self.items + other.items)
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return List(self.items + [other])
+        raise TypeError("List addition requires two listsf the same size")
+
+    def __rsub__(self, other):
+        return -self.__sub__(other)
+
+    def __sub__(self, other):
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return List([ x-other for x in self.items ])
+        raise TypeError("List subtraction requires a list and a scalar")
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __mul__(self, other):
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return List([ x*other for x in self.items ])
+        raise TypeError("List multiplication requires a list and a scalar")
+
+    def __rdiv__(self, other):
+        one = Rational(1)
+        return one/(self*(one/other))
+
+    def __div__(self, other):
+        # print "rational::__div__", self, other, type(other)
+        if other == 0:
+            raise ZeroDivisionError("Divisor is zero")
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return List([ x/other for x in self.items ])
+        raise TypeError("List division requires a list and a scalar")
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __repr__(self):
+        s = "List(%s)" % str(self.items)
+        return s
+
+    def __float__(self):
+        raise ValueError("Attempt to convert a scalar to a list")
+
+    def __getattr__(self, key):
+        '''This function is necessary when a Rational gets compared to an
+        mpf.  The mpf comparison routine looks for the _mpf_ attribute; if
+        it finds it, then it knows it has an mpf.  We fake it out by doing
+        an mpf conversion at the point the information is needed.  Thus,
+        the comparison will be done with the proper number of digits; this
+        wouldn't necessarily be true if we cached the _mpf_ data earlier.
+        '''
+        if key == "_mpf_":
+            return (mpf(self.n)/mpf(self.d))._mpf_
+        else:
+            raise AttributeError("'%s' not an attribute" % key)
+
+    def __cmp__(self, other):
+        if other == None:
+            return -1
+        if isinstance(other, List):
+            return self.items == other.items
+        else:
+            raise ValueError("Second argument is unsupported type")
+
+    def __len__(self):
+        return len(self.items)
+
 vect = re.compile(r"\s*\[([^]]*)\]\s*")
 
 class Vector(object):
@@ -2449,6 +2544,7 @@ class Number(object):
                     self.v,    # interval
                     self.r,    # float
                     self.c,    # complex
+                    self.L,    # list
                     self.V,    # vector
                 ):
             x = func(s)
@@ -2512,6 +2608,20 @@ class Number(object):
     def A(self, s):
         # is this is an array
 
+        return None
+
+    def L(self, s):
+        mo = listre.match(s)
+        if mo:
+            # is this is a list
+            s = mo.group(1)
+            v = []
+            while True:
+                token, tags, s = self.get_next_token(s)
+                print "got %s, %s, %s" % (token, tags, s)
+                if not token: break
+                v.append(self(token))
+            return List(v)
         return None
 
     def V(self, s):

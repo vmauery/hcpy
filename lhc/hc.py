@@ -415,6 +415,7 @@ class Calculator(object):
         imag_number := real_number_ns,[ij]
         array := '[', vector_list, ']'
         vector_list := (vector, ws, vector_list) / vector
+        list := '{', scalar_number_list, '}'
         vector := '[', scalar_number_list, ']'
         scalar_number_list := ( scalar_number, scalar_number_list ) / scalar_number
         real_number_list := (real_number, real_number_list) / real_number
@@ -2695,6 +2696,9 @@ class Calculator(object):
                     (fln(), mode))
         elif isinstance(x, Julian):
             return str(x)
+        elif isinstance(x, List):
+            items = [ "%s" % self.Format(i) for i in x.items ]
+            s = "{ %s }" % ' '.join(items)
         elif isinstance(x, Vector):
             items = [ "%s" % self.Format(i) for i in x.items ]
             s = "[ %s ]" % ' '.join(items)
