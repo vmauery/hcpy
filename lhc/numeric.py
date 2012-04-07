@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
 from __future__ import division
-from mpmath import mpf, mpc, mpi, ctx_iv, eps, mp, pi
+from mpmath import mpf, mpc, mpi, ctx_iv, eps, mp, pi, root
 from mpformat import mpFormat, inf
 from debug import *
 import socket
@@ -2309,7 +2309,98 @@ ip6 = re.compile(r"""
     ^(:(:[0-9a-f]{1,4}){1,5}:(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3})$
 """, re.X | re.I)
 
-vector = re.compile(r"\[\s*([.0])")
+vect = re.compile(r"\s*\[([^]]*)\]\s*")
+
+class Vector(object):
+    def __init__(self, items):
+        # should we check to see that all the items are real numbers?
+        # we cannot really support complex numbers, but the grammar
+        # does not allow them at this time anyway...
+        self.items = items
+        self.plus = lambda x,y: x+y
+        self.minus = lambda x,y: x-y
+
+    def __abs__(self):
+        n = len(self.items)
+        P = mpf('1')
+        for v in self.items:
+            P *= v
+        return root(P)
+
+    def __neg__(self):
+        return Vector([ -x for x in self.items ])
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __add__(self, other):
+        if isinstance(other, Vector) and len(other) == len(self.items):
+            return Vector(map(self.plus, self.items, other.items))
+        raise TypeError("Vector addition requires two vectors of the same size")
+
+    def __rsub__(self, other):
+        return -self.__sub__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, Vector) and len(other) == len(self.items):
+            return Vector(map(self.minus, self.items, other.items))
+        raise TypeError("Vector subtraction requires two vectors of the same size")
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __mul__(self, other):
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return Vector([ x*other for x in self.items ])
+        raise TypeError("Vector multiplication requires a vector and a scalar")
+
+    def __rdiv__(self, other):
+        one = Rational(1)
+        return one/(self*(one/other))
+
+    def __div__(self, other):
+        # print "rational::__div__", self, other, type(other)
+        if other == 0:
+            raise ZeroDivisionError("Divisor is zero")
+        if isint(other) or isinstance(other, mpf) or \
+                isinstance(other, Rational):
+            return Vector([ x/other for x in self.items ])
+        raise TypeError("Vector division requires a vector and a scalar")
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __repr__(self):
+        s = "Vector(%s)" % str(self.items)
+        return s
+
+    def __float__(self):
+        raise ValueError("Attempt to convert a scalar to a vector")
+
+    def __getattr__(self, key):
+        '''This function is necessary when a Rational gets compared to an
+        mpf.  The mpf comparison routine looks for the _mpf_ attribute; if
+        it finds it, then it knows it has an mpf.  We fake it out by doing
+        an mpf conversion at the point the information is needed.  Thus,
+        the comparison will be done with the proper number of digits; this
+        wouldn't necessarily be true if we cached the _mpf_ data earlier.
+        '''
+        if key == "_mpf_":
+            return (mpf(self.n)/mpf(self.d))._mpf_
+        else:
+            raise AttributeError("'%s' not an attribute" % key)
+
+    def __cmp__(self, other):
+        if other == None:
+            return -1
+        if isinstance(other, Vector):
+            return self.items == other.items
+        else:
+            raise ValueError("Second argument is unsupported type")
+
+    def __len__(self):
+        return len(self.items)
 
 class Number(object):
     '''Used to generate a number object from a string.
@@ -2323,8 +2414,16 @@ class Number(object):
     # arithmetic is unsigned.
     signed = True
 
-    def __init__(self):
-        pass
+    def __init__(self, parser):
+        self.tokenize = parser
+
+    def get_next_token(self, line):
+        # snag the next token from the line
+        if line != '':
+            token, taglist, line = self.tokenize(line)
+            print "next token: %s, %s, %s" % (token, taglist, line)
+            return token, taglist, line
+        return None, (), ''
 
     def __call__(self, s, tags=None):
         assert len(s) > 0
@@ -2341,7 +2440,17 @@ class Number(object):
                     else:
                         suffix = mpf("1e" + str(exponent))
                     s = s[:-1]
-        for func in (self.ip, self.j, self.i, self.q, self.v, self.r, self.c):
+        for func in \
+                (
+                    self.ip,   # ipaddr
+                    self.j,    # julian
+                    self.i,    # integer
+                    self.q,    # rational
+                    self.v,    # interval
+                    self.r,    # float
+                    self.c,    # complex
+                    self.V,    # vector
+                ):
             x = func(s)
             if x != None:
                 if suffix == 1:
@@ -2406,7 +2515,17 @@ class Number(object):
         return None
 
     def V(self, s):
-        # is this is a vector
+        mo = vect.match(s)
+        if mo:
+            # is this is a vector
+            s = mo.group(1)
+            v = []
+            while True:
+                token, tags, s = self.get_next_token(s)
+                print "got %s, %s, %s" % (token, tags, s)
+                if not token: break
+                v.append(self(token))
+            return Vector(v)
         return None
 
     def ip(self, s, tags=None):

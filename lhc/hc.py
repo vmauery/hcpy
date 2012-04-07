@@ -113,7 +113,7 @@ class Calculator(object):
         self.display = Display()     # Used to display messages to user
         self.fp = mpFormat()         # For formatting floating point numbers
         self.ap = mpFormat()         # For formatting arguments of complex numbers
-        self.number = Number()
+        self.number = Number(self.tokenize)
         self.registers = {}          # Keeps all stored registers
         self.commands_dict = {
             # Values are
@@ -404,18 +404,20 @@ class Calculator(object):
         ipv4cidr := ipv4,'/',[0-9],[0-9]?
         ipv6 := '::1' / '::' / ((hex_chars,':')+,(':'?,hex_chars)+)
         ipv4 := [0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?
-        numeric := rational_number / scaler_number / compound_number
+        numeric := scalar_number / compound_number
         # roman_numeral := roman_numeral_digit / roman_numeral_digit,roman_numeral_digit
         # roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
+        compound_number := list / vector / array / interval
+        interval := '[' , real_number , ows, ',' , ows , real_number , ']'
+        scalar_number := rational_number / julian / complex_number / imag_number / real_number
         rational_number := dec_whole , '/' , dec_whole
-        compound_number := vector / array
-        scaler_number := julian / complex_number / imag_number / real_number
         complex_number := (real_number_ns,('+'/'-'),imag_number) / ('(',real_number,',',real_number,')') / ('(', real_number, (',', ows)?, '<', real_number, ')')
         imag_number := real_number_ns,[ij]
         array := '[', vector_list, ']'
-        vector_list := (vector, ',', vector_list) / vector
-        vector := '[', real_number_list, ']'
-        real_number_list := real_number, (','?, real_number)*
+        vector_list := (vector, ws, vector_list) / vector
+        vector := '[', scalar_number_list, ']'
+        scalar_number_list := ( scalar_number, scalar_number_list ) / scalar_number
+        real_number_list := (real_number, real_number_list) / real_number
         real_number := ows, real_number_ns, ows
         real_number_ns := bin_number / oct_number / hex_number / dec_number
         # now and today are 'numbers' interpreted by Julian class
@@ -2693,6 +2695,9 @@ class Calculator(object):
                     (fln(), mode))
         elif isinstance(x, Julian):
             return str(x)
+        elif isinstance(x, Vector):
+            items = [ "%s" % self.Format(i) for i in x.items ]
+            s = "[ %s ]" % ' '.join(items)
         else:
             self.errors.append("%sError in Format():  Unknown number format" % fln())
             return str(x)
@@ -3000,20 +3005,21 @@ class Calculator(object):
             tags = tags[0][3]
         return ft
 
-    def token(self):
+    def tokenize(self, line):
+        success, taglist, next = TextTools.tag(line, self.parser)
+        if not success:
+            raise ParseError("Not a command or value: '%s'"%line)
+        #print "'%s' yielding '%s', '%s'" % (line, self.chomp(line[:next]),taglist)
+        return self.chomp(line[:next]), self.flatten_tags(taglist), self.chomp(line[next:])
+
+    def get_next_token(self):
         # snag the next token from the line
         line = self.read_line()
         # print "got new line: '%s'" % line
-        success, taglist, next = TextTools.tag(line, self.parser)
-        while self.chomp(line) != '':
-            if not success:
-                raise ParseError("Not a command or value: '%s'"%line)
-            #print "'%s' yielding '%s', '%s'" % (line, self.chomp(line[:next]),taglist)
-            yield self.chomp(line[:next]), self.flatten_tags(taglist), line[next:]
+        while line != '':
+            token, taglist, line = self.tokenize(line)
+            yield token, taglist, line
             # print "back from yield '%s'"%self.chomp(line[:next])
-            line = self.chomp(line[next:])
-            #line = line[next:]
-            success, taglist, next = TextTools.tag(line, self.parser)
 
     def prepare_args(self, fn, inf):
         if debug(): print "prepare_args(%s,%s)"%(fn,str(inf))
@@ -3055,7 +3061,7 @@ class Calculator(object):
         while True:
             arg = ''
             try:
-                for arg,tag,line in self.token():
+                for arg,tag,line in self.get_next_token():
                     if debug(): print arg,line,tag
                     if 'func' in tag:
                         cmdidx = tag.index('func')
