@@ -3042,6 +3042,8 @@ class Calculator(object):
             return []
         if n == 'x':
             v = self.pop()
+            if isinstance(v, List):
+                return v.items
             if not isint(v):
                 self.push(v)
                 raise TypeError("'%s' requires an integer as the first argument" % fn)
