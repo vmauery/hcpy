@@ -2516,7 +2516,6 @@ class Number(object):
         # snag the next token from the line
         if line != '':
             token, taglist, line = self.tokenize(line)
-            print "next token: %s, %s, %s" % (token, taglist, line)
             return token, taglist, line
         return None, (), ''
 
@@ -2618,7 +2617,6 @@ class Number(object):
             v = []
             while True:
                 token, tags, s = self.get_next_token(s)
-                print "got %s, %s, %s" % (token, tags, s)
                 if not token: break
                 v.append(self(token))
             return List(v)
@@ -2632,7 +2630,6 @@ class Number(object):
             v = []
             while True:
                 token, tags, s = self.get_next_token(s)
-                print "got %s, %s, %s" % (token, tags, s)
                 if not token: break
                 v.append(self(token))
             return Vector(v)
