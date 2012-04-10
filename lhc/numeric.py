@@ -132,7 +132,7 @@ class Rational(object):
         elif isinstance(other, float):
             raise ValueError("float subtraction not supported")
         else:
-            assert isinstance(other, int) or isinstance(other, mpf) or \
+            assert isint(other) or isinstance(other, mpf) or isinstance(other, Rational) or \
                    isinstance(other, mpc) or isinstance(other, ctx_iv.ivmpf)
             n = self.n - other*self.d
             if isinstance(n, int):
