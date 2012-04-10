@@ -90,7 +90,6 @@ defcfg = {
     # a(b%); ivc mode is <a, b>.
     "iv_space" : True,              # a +- b vs. a+-b, a (b%) vs a(b%)
     "iv_mode" : "b",
-    "iv_brackets" : ("<", ">"),     # <a, b>
 
     # If brief is set to true, truncate numbers to fit on one line.
     "brief" : True,

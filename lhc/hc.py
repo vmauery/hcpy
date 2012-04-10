@@ -2686,7 +2686,7 @@ class Calculator(object):
             elif mode == "c":
                 a = self.fp.format(a, f)
                 b = self.fp.format(b, f).strip()
-                br1, br2 = config.cfg["iv_brackets"]
+                br1, br2 = '[',']'
                 s = br1 + a.strip() + "," + sp + b + br2
             else:
                 raise ValueError("%s'%s' is unknown iv_mode in configuration" % \
