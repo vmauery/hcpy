@@ -1963,8 +1963,13 @@ class Calculator(object):
         """
     Usage: y x in
 
-    Both x and y are expected to be interval numbers or x a number
-    and y and interval number.  Returns the boolean 'x in y'.
+    For interval arithmetic:
+        Both x and y are expected to be interval numbers or x a number
+        and y and interval number.
+    For list arithmetic:
+        x must be a number and y be a list.
+
+    Returns the boolean 'x in y'.
         """
         msg = "%sy needs to be an interval number or Julian interval"
         if isinstance(y, m.ctx_iv.ivmpf):
@@ -1990,6 +1995,8 @@ class Calculator(object):
                 return x.value in y.value
             else:
                 return x in y.value
+        elif isinstance(y, List):
+            return x in y.items
         else:
             raise ValueError(msg % fln())
 
