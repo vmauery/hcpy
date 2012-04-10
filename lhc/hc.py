@@ -270,8 +270,6 @@ class Calculator(object):
             "phi"      : [self.Phi, 0],   # Golden ratio
             "pi"       : [self.Pi, 0],
             "e"        : [self.E, 0],
-            "i"        : [self.I, 0],
-            "j"        : [self.I, 0],
             "const"    : [self.const, 0],  # grab a list of constants
 
             # network functions
@@ -396,7 +394,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement := constant / ipaddr / numeric / delimited_func
+        simple_statement := delimited_func / constant / ipaddr / numeric
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
@@ -412,7 +410,7 @@ class Calculator(object):
         scalar_number := rational_number / julian / complex_number / imag_number / real_number
         rational_number := dec_whole , '/' , dec_whole
         complex_number := (real_number_ns,('+'/'-'),imag_number) / ('(',real_number,',',real_number,')') / ('(', real_number, (',', ows)?, '<', real_number, ')')
-        imag_number := real_number_ns,[ij]
+        imag_number := real_number_ns?,[ij]
         array := '[', vector_list, ']'
         vector_list := (vector, ws, vector_list) / vector
         list := '{', scalar_number_list, '}'
@@ -1367,14 +1365,6 @@ class Calculator(object):
     Returns e
         """
         return m.mpf(m.mp.e)
-
-    def I(self):
-        """
-    Usage: i (or j)
-
-    Returns i (or j, depending on how you see it)
-        """
-        return m.mpc(0,1)
 
     def choose_a_const(self, clist, keys):
         # read names out in groups of 24
@@ -3124,7 +3114,7 @@ class Calculator(object):
                 break
             except ParseError:
                 type,value,tb = sys.exc_info()
-                print value
+                print "parse error:\n%s" % value
             except SystemExit:
                 raise
             except:
