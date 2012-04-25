@@ -188,6 +188,17 @@ class Rational(object):
     def __truediv__(self, other):
         return self.__div__(other)
 
+    def __pow__(self, y):
+        x1 = mpf(self.n)/mpf(self.d)
+        if isinstance(y, Rational):
+            y1 = mpf(y.n)/mpf(y.d)
+        else:
+            if isinstance(y, Zn):
+                y1 = int(y)
+            else:
+                y1 = y
+        return x1 ** y1
+
     def _mixed(self):
         sign = ""
         if (self.n < 0 and self.d > 0) or (self.n > 0 and self.d < 0):
