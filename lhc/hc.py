@@ -248,6 +248,15 @@ class Calculator(object):
             "acsch"    : [self.acsch, 1], # {"post" : self.Conv2Deg}],
             "acoth"    : [self.acoth, 1], # {"post" : self.Conv2Deg}],
 
+            # statistics functions
+            "stddev"   : [self.stddev, 1],  # take std deviation of a set
+            "mean"     : [self.mean, 1],    # return mean of a set
+            "median"   : [self.median, 1],  # return median of a set
+            "min"      : [self.minimum, 1],  # return minimum of a set
+            "max"      : [self.maximum, 1],  # return maximum of a set
+            "range"    : [self.Range, 1],  # return the range of a set as an interval
+            "sort"     : [self.sort, 1],  # return a sorted set
+
             # Stack functions
             "clr"      : [self.ClearStack, 0],
             "clear"    : [self.Reset, 0], # Reset the calculator state
@@ -912,7 +921,7 @@ class Calculator(object):
 
     Returns the sum of the bottom x items on the stack
     """
-        s = 0
+        s = Zn(0)
         try:
             for x in args:
                 s = self.add(s, x)
@@ -1238,6 +1247,107 @@ class Calculator(object):
     or a shortcut for 'x log10 10 *'
         """
         return 10 * self.log10(x)
+
+    def stddev(self, x):
+        """
+    Usage: x stddev
+
+    Returns the standard deviation of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("StdDev requires a list")
+        mean = self.mean(x)
+        dx = List([ (v-mean)**2 for v in x.items ])
+        return self.sqrt(self.mean(dx))
+
+    def mean(self, x):
+        """
+    Usage: x mean
+
+    Returns the mean of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("mean requires a list")
+        total = self.sum(*x.items)
+        return self.divide(total, Zn(len(x)))
+
+    def median(self, x):
+        """
+    Usage: x median
+
+    Returns the median of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("median requires a list")
+        l = x.items
+        l.sort()
+        c = len(x)
+        h = c >> 1
+        if c & 1:
+            return l[h]
+        return self.mean(List(l[h-1:h+1]))
+
+    def minimum(self, x):
+        """
+    Usage: x min
+
+    Returns the minimum of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("min requires a list")
+        l = x.items
+        l.sort()
+        return l[0]
+
+    def maximum(self, x):
+        """
+    Usage: x max
+
+    Returns the maximum of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("max requires a list")
+        l = x.items
+        l.sort()
+        return l[-1]
+
+    def Range(self, x):
+        """
+    Usage: x range
+
+    Returns the range of list x
+        """
+        if not isinstance(x, List):
+            raise TypeError("range requires a list")
+        l = x.items
+        l.sort()
+        rl = None
+        if isint(l[0]):
+            rl = int(l[0])
+        elif isinstance(l[0], Julian):
+            rl = l[0].value
+        else:
+            rl = l[0]
+        if isint(l[-1]):
+            rh = int(l[-1])
+        elif isinstance(l[-1], Julian):
+            rh = l[-1].value
+        else:
+            rh = l[-1]
+        return mpi(rl, rh)
+
+    def sort(self, x):
+        """
+    Usage: x sort
+
+    Returns a sorted version of x
+        """
+        if not isinstance(x, List):
+            raise TypeError("sort requires a list")
+
+        l = x.items
+        l.sort()
+        return List(l)
 
     def store(self, x, r):
         """
