@@ -403,7 +403,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement := delimited_func / constant / ipaddr / numeric
+        simple_statement :=  constant / ipaddr / numeric / delimited_func
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
