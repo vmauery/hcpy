@@ -2233,14 +2233,14 @@ if __name__ == "__main__":
     TestArithmetic()
 
 # Number recognition regular expressions
-integer = re.compile("^[+-]?\d+$")
+integer = re.compile("^[-+]?\d+$")
 
 cre=r'''
     %s                          # Match at beginning
     ([+-])%s                    # Optional leading sign
     %s                          # Placeholder for imaginary unit
     (\d+\.\d+|\d+\.?|\.\d+)     # Required digits and opt. decimal point
-    (e[+-]?\d+)?                # Optional exponent
+    (e[-+]?\d+)?                # Optional exponent
     %s                          # Match at end
 '''
 # Pure imaginary, xi or ix
@@ -2696,7 +2696,14 @@ class Number(object):
             else:
                 n = int(digits)
             if exp is not None:
-                n *= 10**int(exp[1:])
+                exp = int(exp[1:])
+                if exp < 0:
+                    exp = -exp
+                    d *= 10**exp
+                else:
+                    n *= 10**exp
+            if d == 1:
+                return Zn(n)
             return Rational(n, d)
         mo = rational.match(s)
         if mo:
