@@ -403,7 +403,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement :=  constant / ipaddr / numeric / delimited_func
+        simple_statement :=  delimited_func / constant / ipaddr / numeric
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
@@ -419,7 +419,7 @@ class Calculator(object):
         scalar_number := rational_number / julian / complex_number / imag_number / real_number
         rational_number := dec_whole , '/' , dec_whole
         complex_number := (real_number_ns,('+'/'-'),imag_number) / ('(',real_number,',',real_number,')') / ('(', real_number, (',', ows)?, '<', real_number, ')')
-        imag_number := real_number_ns?,[ij]
+        imag_number := real_number_ns?,[ij],ws
         array := '[', vector_list, ']'
         vector_list := (vector, ws, vector_list) / vector
         list := '{', scalar_number_list, '}'
@@ -442,8 +442,8 @@ class Calculator(object):
         dec_chars := [0-9]+
         oct_chars := [0-7]+
         bin_chars := [01]+
-        ows := [ \n\t]*
-        ws := [ \n\t],ows
+        ows := [ \r\n\t]*
+        ws := [ \r\n\t]+
         delimited_func := (ws,func,ws) / (ws,func) / (func,ws) / func
         """,
             "func := %s\n" % ' / '.join(defined_functions),
@@ -1849,7 +1849,7 @@ class Calculator(object):
         if x == 0: return x
         if isinstance(x, m.mpc):
             raise ValueError("%sNot an appropriate operation for a complex number" % fln())
-        return degrees(x)
+        return m.degrees(x)
 
     def ToRadians(self, x):
         """
@@ -1860,7 +1860,7 @@ class Calculator(object):
         if x == 0: return x
         if isinstance(x, m.mpc):
             raise ValueError("%sNot an appropriate operation for a complex number" % fln())
-        return radians(x)
+        return m.radians(x)
 
     def ToUnix(self, x):
         """
@@ -3126,7 +3126,7 @@ class Calculator(object):
 
     def get_next_token(self):
         # snag the next token from the line
-        line = self.read_line()
+        line = self.read_line()+' '
         # print "got new line: '%s'" % line
         while line != '':
             token, taglist, line = self.tokenize(line)
