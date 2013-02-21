@@ -403,7 +403,7 @@ class Calculator(object):
         grammar = ''.join(["""
         calculator_grammar := statement / ws
         statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement :=  delimited_func / constant / ipaddr / numeric
+        simple_statement :=  numeric / delimited_func / constant / ipaddr
         constant := 'const'
         ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
         #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
@@ -426,7 +426,7 @@ class Calculator(object):
         vector := '[', scalar_number_list, ']'
         scalar_number_list := ( scalar_number, scalar_number_list ) / scalar_number
         real_number_list := (real_number, real_number_list) / real_number
-        real_number := ows, real_number_ns, ows
+        real_number := real_number_ns, ws
         real_number_ns := bin_number / oct_number / hex_number / dec_number
         # now and today are 'numbers' interpreted by Julian class
         julian := 'now' / 'today' / datetime
@@ -3129,7 +3129,7 @@ class Calculator(object):
         line = self.read_line()+' '
         # print "got new line: '%s'" % line
         while line != '':
-            token, taglist, line = self.tokenize(line)
+            token, taglist, line = self.tokenize(line+' ')
             yield token, taglist, line
             # print "back from yield '%s'"%self.chomp(line[:next])
 
