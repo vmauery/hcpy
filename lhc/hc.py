@@ -416,7 +416,7 @@ class Calculator(object):
         # roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
         compound_number := list / vector / array / interval
         interval := '[' , real_number , ows, ',' , ows , real_number , ']'
-        scalar_number := rational_number / julian / complex_number / imag_number / real_number
+        scalar_number := julian / rational_number / complex_number / imag_number / real_number
         rational_number := dec_whole , '/' , dec_whole
         complex_number := (real_number_ns,('+'/'-'),imag_number) / ('(',real_number,',',real_number,')') / ('(', real_number, (',', ows)?, '<', real_number, ')')
         imag_number := real_number_ns?,[ij],ws
@@ -430,7 +430,7 @@ class Calculator(object):
         real_number_ns := bin_number / oct_number / hex_number / dec_number
         # now and today are 'numbers' interpreted by Julian class
         julian := 'now' / 'today' / datetime
-        datetime := [0-9],[0-9]?,month,[0-9],[0-9],[0-9],[0-9],[-:],[0-9],[0-9],':',[0-9],[0-9],':',[0-9],[0-9],('.',[0-9]+)?
+        datetime := [0-9],[0-9]?,month,[0-9],[0-9],[0-9],[0-9],([-:],[0-9],[0-9],':',[0-9],[0-9],':',[0-9],[0-9],('.',[0-9]+)?)?
         month := ([Jj],[Aa],[Nn]) / ([Ff],[Ee],[Bb]) / ([Mm],[Aa],[Rr]) / ([Aa],[Pp],[Rr]) / ([Mm],[Aa],[Yy]) / ([Jj],[Uu],[Nn]) / ([Jj],[Uu],[Ll]) / ([Aa],[Uu],[Gg]) / ([Ss],[Ee],[Pp]) / ([Oo],[Cc],[Tt]) / ([Nn],[Oo],[Vv]) / ([Dd],[Ee],[Cc])
         hex_number := '-'?,'0x',hex_chars
         dec_number := dec_float / dec_whole
