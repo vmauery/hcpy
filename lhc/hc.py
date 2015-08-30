@@ -161,6 +161,7 @@ class Calculator(object):
             "iv"       : [self.ToIV, 2],   # Convert to [y,x] interval number
             "gcf"      : [self.gcf, 2],  # find the greatest common factor
             "lcd"      : [self.lcd, 2],  # find the lowest common denominator
+            "modinv"   : [self.modinv, 2],  # find the multiplicative modular inverse
 
             # Unary functions
             "I"        : [self.Cast_i, 1],  # Convert to integer
@@ -2014,6 +2015,26 @@ class Calculator(object):
         if not isint(x) or not isint(y):
             raise TypeError("operands to lcd must be integers")
         return self.multiply(y, x)/self.gcf(y, x)
+
+    def modinv(self, y, x):
+        """
+    Usage: y x modinv
+
+    Returns the multiplicative modular inverse of y (mod x)
+        """
+        if not isint(x) or not isint(y):
+            raise TypeError("operands to modinv must be integers")
+        t, newt = 0, 1
+        r, newr = x, y
+        while newr != 0:
+            quotient = r // newr
+            t, newt = newt, t - quotient * newt
+            r, newr = newr, r - quotient * newr
+        if r > 1:
+            raise ValueError("y is not invertible")
+        if t < 0:
+            t += x
+        return t
 
     def Chop(self, x):
         """
