@@ -164,6 +164,7 @@ class Calculator(object):
             "modinv"   : [self.modinv, 2],  # find the multiplicative modular inverse
 
             # Unary functions
+            "factor"   : [self.factor, 1],  # return a list of factors of x
             "I"        : [self.Cast_i, 1],  # Convert to integer
             "Q"        : [self.Cast_q, 1],  # Convert to rational at display resolution
             "QQ"       : [self.Cast_qq, 1], # Convert to rational at full precision
@@ -2035,6 +2036,27 @@ class Calculator(object):
         if t < 0:
             t += x
         return t
+
+    def factor(self, x):
+        """
+    Usage: x factor
+
+    Returns a list containing the factors of x
+        """
+        if not isint(x):
+            raise TypeError("operand to factor must be an integer")
+
+        facts = []
+        maxf = long(self.sqrt(x))
+        n = long(2)
+        while n <= maxf:
+            if (x % n) == 0:
+                facts.append(Zn(n))
+                o = long(x)//n
+                facts.append(Zn(o))
+            n += 1
+        facts.sort()
+        return facts
 
     def Chop(self, x):
         """
