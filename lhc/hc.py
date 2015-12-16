@@ -161,6 +161,7 @@ class Calculator(object):
             "iv"       : [self.ToIV, 2],   # Convert to [y,x] interval number
             "gcf"      : [self.gcf, 2],  # find the greatest common factor
             "lcd"      : [self.lcd, 2],  # find the lowest common denominator
+            "rsa_info" : [self.rsa_info, 0],  # print rsa info
             "modinv"   : [self.modinv, 2],  # find the multiplicative modular inverse
 
             # Unary functions
@@ -2036,6 +2037,46 @@ class Calculator(object):
         if t < 0:
             t += x
         return t
+
+    def rsa_info(self):
+        """
+    Usage: rsa_info
+
+    RSA key parts:
+    e -> public exponent (usually 0x10001)
+    p, q -> two co-prime numbers
+    n -> modulus = p*q
+    í(n) (phi) -> totient of pq = (p-1)*(q-1)
+    d -> private exponent = modular multiplicative inverse: e mod í(n) = e í(n) modinv
+    dp -> first factor in chinese remainder theorem = d mod (p-1)
+    dq -> first factor in chinese remainder theorem = d mod (q-1)
+    qinv -> multiplicative modular inverse q^-1 mod p = q p modinv
+
+    It is possible to calculate p,q from n,í(n) with quadratic formula as follows:
+    í(n) = (p-1)(q-1) = pq - p - q + 1 = (n+1) - (p+q)
+    thus: (n+1) - í(n) = p+q, or (n+1) - í(n) - p = q
+    substitute: n = pq, yields: n = p((n+1)-í(n)-p) = -pý + (n+1-í(n)))p
+    rearrange: pý - (n+1-í(n))p + n = 0
+    this is a quadratic equation with:
+        a = 1
+        b = -(n + 1 - í(n))
+        c = n
+    Solve for p (and q because of root symmetry):
+                __________
+           -b ñ û bý - 4ac `
+    p,q = -----------------
+                 2a
+
+    substitute a,b,c:
+                             _________________________
+           (n + 1 - í(n)) ñ û (n + 1 - í(n))ý - 4 * n `
+    p,q =  --------------------------------------------
+                               2
+
+        """
+        print self.rsa_info.__doc__
+
+        return None
 
     def factor(self, x):
         """
