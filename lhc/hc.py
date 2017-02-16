@@ -165,6 +165,7 @@ class Calculator(object):
 
             # Unary functions
             "factor"   : [self.factor, 1],  # return a list of factors of x
+            "fib"      : [self.fibonacci, 1], # return fibonacci sequence for x
             "I"        : [self.Cast_i, 1],  # Convert to integer
             "Q"        : [self.Cast_q, 1],  # Convert to rational at display resolution
             "QQ"       : [self.Cast_qq, 1], # Convert to rational at full precision
@@ -819,7 +820,7 @@ class Calculator(object):
 
     Return the value of the pow() function applied to the bottom two items on the stack (y^x)
         """
-        return pow(y, x)
+        return y ** x
 
     #---------------------------------------------------------------------------
     # Unary functions
@@ -2134,6 +2135,34 @@ class Calculator(object):
             n += 1
         facts.sort()
         return facts
+
+    def fibonacci(self, x):
+        """
+    Usage: x fib
+
+    Returns the x-th entry in the fibonacci sequence
+        """
+        fx = 0
+        if not isint(x) or x > 1000 or x < 0:
+            if isint(x):
+                x = long(x)
+            # direct calculation with Binet's equation
+            phi = (self.sqrt(5) + 1)/2
+            fx = (self.power(phi, x) - self.power(-phi, -x))/(phi * 2 - 1)
+            if isint(x):
+                fx = long(fx)
+        else:
+            if x == 0:
+                return 0
+            fx = 1
+            fp = 0
+            n = 1
+            while n < x:
+                ft = fx
+                fx += fp
+                fp = ft
+                n = n + 1
+        return fx
 
     def Chop(self, x):
         """
