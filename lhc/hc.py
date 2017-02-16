@@ -2080,7 +2080,7 @@ class Calculator(object):
     Usage: rsa_info
 
     RSA key parts:
-    e -> public exponent (usually 0x10001)
+    e -> public exponent (usually 0x10001) (must be co-prime with í(n))
     p, q -> two co-prime numbers
     n -> modulus = p*q
     í(n) (phi) -> totient of pq = (p-1)*(q-1)
@@ -2099,14 +2099,14 @@ class Calculator(object):
         b = -(n + 1 - í(n))
         c = n
     Solve for p (and q because of root symmetry):
-                __________
-           -b ñ û bý - 4ac `
-    p,q = -----------------
+                  __________
+           -b ñ \/ bý - 4ac `
+    p,q = --------------------
                  2a
 
     substitute a,b,c:
-                             _________________________
-           (n + 1 - í(n)) ñ û (n + 1 - í(n))ý - 4 * n `
+                              _________________________
+           (n + 1 - í(n)) ñ \/ (n + 1 - í(n))ý - 4 * n `
     p,q =  --------------------------------------------
                                2
 
