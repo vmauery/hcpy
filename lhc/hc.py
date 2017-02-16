@@ -61,7 +61,7 @@ except ImportError:
 This is a complex program that requires several external python
 libraries.  Please install mpmath, simpleparse
 
-apt-get install python-mpmath python-simpleparse
+apt-get install python-mpmath python-simpleparse python-simpleparse-mxtexttools
 
 """
     sys.exit(1)
@@ -90,7 +90,6 @@ status_unknown_command  = 3
 status_ok_no_display    = 4
 status_interrupted      = 5
 JULIAN_UNIX_EPOCH = Julian("1Jan1970:00:00:00")
-
 
 class ParseError(Exception):
     pass
