@@ -142,8 +142,8 @@ class Calculator(object):
             "<<"       : [self.bit_leftshift, 2],
             ">>"       : [self.bit_rightshift, 2],
             "%ch"      : [self.percent_change, 2],
-            "comb"     : [self.combination, 2],  # Combinations of y taken x at a time
-            "perm"     : [self.permutation, 2],  # Permutations of y taken x at a time
+            "comb"     : [self.combination, 2],    # Combinations of y choose x
+            "perm"     : [self.permutation, 2],    # Permutations of y choose x
             "pow"      : [self.power, 2],  # Raise y to the power of x
             "^"        : [self.power, 2],  # Raise y to the power of x
             "atan2"    : [self.atan2, 2], # {"post" : self.Conv2Deg}], #
@@ -761,12 +761,30 @@ class Calculator(object):
     Usage: y x comb
 
     Return the statistical combination of the bottom two items on the stack
+
+    Use when order doesn't matter in the choice.
+
+    No repetition, use: y x comb
+    / y \       y!
+    |    | = --------
+    \ x /    x!(y-x)!
+
+    With repetition, use: y x swap over + 1 - swap comb
+                  or use: y x 1 - over + swap 1 - comb
+
+    / y+x-1 \     / y+x-1 \     (y+x-1)!
+    |        | =  |        | =  --------
+    \   x   /     \  y-1  /     x!(y-x)!
+
         """
-        if (not config.cfg["coerce"]) and \
-           (not isint(y)) and (not isint(x)):
-            raise ValueError(self.argument_types % fln())
-        y = Convert(y, INT)
-        x = Convert(x, INT)
+        if not config.cfg["coerce"]:
+            if (not isint(y)) and (not isint(x)):
+                raise ValueError(self.argument_types % fln())
+        else:
+            if not isint(x):
+                x = Convert(x, INT)
+            if not isint(y):
+                y = Convert(y, INT)
         return int(self.permutation(y, x)//self.Factorial(x))
 
     def permutation(self, y, x):
@@ -774,12 +792,25 @@ class Calculator(object):
     Usage: y x perm
 
     Return the statistical permutation of the bottom two items on the stack
+
+    Use when order matters in the choice.
+
+    No repetition, use: y x perm
+                                        y!
+    order x things from y available = ------
+                                      (y-x)!
+
+    With repetition, use: y x ^
+
         """
-        if (not config.cfg["coerce"]) and \
-           (not isint(y)) and (not isint(x)):
-            raise ValueError(self.argument_types % fln())
-        y = Convert(y, INT)
-        x = Convert(x, INT)
+        if not config.cfg["coerce"]:
+            if (not isint(y)) and (not isint(x)):
+                raise ValueError(self.argument_types % fln())
+        else:
+            if not isint(x):
+                x = Convert(x, INT)
+            if not isint(y):
+                y = Convert(y, INT)
         return int(self.Factorial(y)//self.Factorial(y - x))
 
     def power(self, y, x):
@@ -814,9 +845,15 @@ class Calculator(object):
         """
     Usage: x ~
 
-    Returns the bit-negated version of x (x gets cast to an int)
+    Returns the bit-negated version of x (x may be cast to an int)
         """
-        return ~Convert(x, INT)
+        if not config.cfg["coerce"]:
+            if not isint(x):
+                raise ValueError(self.argument_types % fln())
+        else:
+            if not isint(x):
+                x = Convert(x, INT)
+        return ~x
 
     def negate(self, x):
         """
@@ -903,7 +940,7 @@ class Calculator(object):
             if x in self.factorial_cache:
                 return self.factorial_cache[x]
             else:
-                if x > 2:
+                if x > 1:
                     y = 1
                     for i in xrange(2, x+1):
                         y *= i
