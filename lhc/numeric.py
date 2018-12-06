@@ -2526,8 +2526,8 @@ class Number(object):
     def get_next_token(self, line):
         # snag the next token from the line
         if line != '':
-            token, taglist, line = self.tokenize(line)
-            return token, taglist, line
+            token, line = self.tokenize(line)
+            return token, line
         return None, (), ''
 
     def __call__(self, s, tags=None):
@@ -2592,6 +2592,7 @@ class Number(object):
 
     def i(self, s):
         # Handle special cases like 0x, 0o, and 0b
+        def_base = config.cfg["integer_mode"]
         try:
             value = 0
             match = False
@@ -2599,16 +2600,32 @@ class Number(object):
                 if s[:2] == "0x":
                     value = int(s[2:], 16)
                     match = True
+                elif s[:2] == "0d":
+                    value = int(s[2:], 10)
+                    match = True
                 elif s[:2] == "0o":
                     value = int(s[2:], 8)
                     match = True
                 elif s[:2] == "0b":
                     value = int(s[2:], 2)
                     match = True
-            if integer.match(s):
-                return Zn(int(s))
+            if not match:
+                if def_base == "hex":
+                    value = int(s, 16)
+                    match = True
+                elif def_base == "dec":
+                    value = int(s, 10)
+                    match = True
+                elif def_base == "oct":
+                    value = int(s, 8)
+                    match = True
+                elif def_base == "bin":
+                    value = int(s, 2)
+                    match = True
             if match:
                 return Zn(value)
+            if integer.match(s):
+                return Zn(int(s))
         except ValueError:
             pass
         except Exception:
@@ -2627,7 +2644,7 @@ class Number(object):
             s = mo.group(1)
             v = []
             while True:
-                token, tags, s = self.get_next_token(s)
+                token, s = self.get_next_token(s)
                 if not token: break
                 v.append(self(token))
             return List(v)
@@ -2640,7 +2657,7 @@ class Number(object):
             s = mo.group(1)
             v = []
             while True:
-                token, tags, s = self.get_next_token(s)
+                token, s = self.get_next_token(s)
                 if not token: break
                 v.append(self(token))
             return Vector(v)

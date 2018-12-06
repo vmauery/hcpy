@@ -112,8 +112,9 @@ class Calculator(object):
         self.display = Display()     # Used to display messages to user
         self.fp = mpFormat()         # For formatting floating point numbers
         self.ap = mpFormat()         # For formatting arguments of complex numbers
-        self.number = Number(self.tokenize)
+        self.number = Number(self.get_next_token)
         self.registers = {}          # Keeps all stored registers
+        self.split_on = regex.compile('(\?<=|>=|!=|==|<<|>>|[-\+\*/%^&|~<>\r\n\t ])')
         self.commands_dict = {
             # Values are
             # [
@@ -382,83 +383,6 @@ class Calculator(object):
         defined_functions = ["'nop'"]
         funcs = self.commands_dict.keys()
         funcs.sort(reverse=True)
-        grammar_funcs = {}
-        for f in funcs:
-            funcinf = self.commands_dict[f]
-            name = funcinf[0].__name__
-            if name not in defined_functions:
-                defined_functions.append(name)
-            if len(funcinf) == 3 and 'grammar' in funcinf[2]:
-                if name not in grammar_funcs:
-                    grammar_funcs[name] = [funcinf[2]['grammar']]
-                else:
-                    grammar_funcs[name].append(funcinf[2]['grammar'])
-            else:
-                if name not in grammar_funcs:
-                    grammar_funcs[name] = ["'%s'" %f,]
-                else:
-                    grammar_funcs[name].append("'%s'" %f)
-        functions_grammar = []
-        for name,func_vals in grammar_funcs.iteritems():
-            functions_grammar.append('        %s := %s' % (name, ' / '.join(func_vals)))
-        grammar_funcs = '\n'.join(functions_grammar)
-        # print defined_functions
-        grammar = ''.join(["""
-        calculator_grammar := statement / ws
-        statement := simple_statement / (simple_statement, ws, statement)
-        simple_statement :=  numeric / delimited_func / constant / ipaddr
-        constant := 'const'
-        ipaddr := ipv6cidr / ipv4cidr / ipv6 / ipv4
-        #ipv6 := (((hex_chars)?),':')+,((hex_chars)?),(':',((hex_chars)?))+
-        ipv6cidr := ipv6,'/',[0-9],[0-9]?,[0-9]?
-        ipv4cidr := ipv4,'/',[0-9],[0-9]?
-        ipv6 := '::1' / '::' / ((hex_chars,':')+,(':'?,hex_chars)+)
-        ipv4 := [0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?,'.',[0-9],[0-9]?,[0-9]?
-        numeric := scalar_number / compound_number
-        # roman_numeral := roman_numeral_digit / roman_numeral_digit,roman_numeral_digit
-        # roman_numeral_digit := [Mm] / [Dd] / [Cc] / [Ll] / [Xx] / [Vv] / [Ii]
-        compound_number := list / vector / array / interval
-        interval := '[' , real_number , ows, ',' , ows , real_number , ']'
-        scalar_number := julian / rational_number / complex_number / imag_number / real_number
-        rational_number := dec_whole , '/' , dec_whole
-        complex_number := (real_number_ns,('+'/'-'),imag_number) / ('(',real_number,',',real_number,')') / ('(', real_number, (',', ows)?, '<', real_number, ')')
-        imag_number := real_number_ns?,[ij],ws
-        array := '[', vector_list, ']'
-        vector_list := (vector, ws, vector_list) / vector
-        list := '{', scalar_number_list, '}'
-        vector := '[', scalar_number_list, ']'
-        scalar_number_list := ( scalar_number, scalar_number_list ) / scalar_number
-        real_number_list := (real_number, real_number_list) / real_number
-        real_number := real_number_ns, ws
-        real_number_ns := bin_number / oct_number / hex_number / dec_number
-        # now and today are 'numbers' interpreted by Julian class
-        julian := 'now' / 'today' / datetime
-        datetime := [0-9],[0-9]?,month,[0-9],[0-9],[0-9],[0-9],([-:],[0-9],[0-9],':',[0-9],[0-9],':',[0-9],[0-9],('.',[0-9]+)?)?
-        month := ([Jj],[Aa],[Nn]) / ([Ff],[Ee],[Bb]) / ([Mm],[Aa],[Rr]) / ([Aa],[Pp],[Rr]) / ([Mm],[Aa],[Yy]) / ([Jj],[Uu],[Nn]) / ([Jj],[Uu],[Ll]) / ([Aa],[Uu],[Gg]) / ([Ss],[Ee],[Pp]) / ([Oo],[Cc],[Tt]) / ([Nn],[Oo],[Vv]) / ([Dd],[Ee],[Cc])
-        hex_number := '-'?,'0x',hex_chars
-        dec_number := dec_float / dec_whole
-        dec_whole := '-'?,dec_chars
-        dec_float := '-'?,((dec_chars,'.',dec_chars)/(dec_chars,'.')/('.',dec_chars)/dec_chars),('e','-'?,dec_chars)?
-        oct_number := '-'?,'0o',oct_chars
-        bin_number := '-'?,'0b',bin_chars
-        hex_chars := [0-9A-Fa-f]+
-        dec_chars := [0-9]+
-        oct_chars := [0-7]+
-        bin_chars := [01]+
-        ows := [ \r\n\t]*
-        ws := [ \r\n\t]+
-        delimited_func := (ws,func,ws) / (ws,func) / (func,ws) / func
-        """,
-            "func := %s\n" % ' / '.join(defined_functions),
-            grammar_funcs,
-        ])
-        # print grammar
-        try:
-            self.parser = generator.buildParser(grammar).parserbyname('calculator_grammar')
-        except:
-            print "Parser failed to build.  This may not work at all..."
-            type,value,tb = sys.exc_info()
-            traceback.print_exception(type, value, tb, None, sys.stdout)
         self.chomppre = regex.compile(r"^\s*")
         self.chomppost = regex.compile(r"\s*$")
 
@@ -3266,21 +3190,30 @@ class Calculator(object):
             tags = tags[0][3]
         return ft
 
-    def tokenize(self, line):
-        success, taglist, next = TextTools.tag(line, self.parser)
-        if not success:
-            raise ParseError("Not a command or value: '%s'"%line)
-        #print "'%s' yielding '%s', '%s'" % (line, self.chomp(line[:next]),taglist)
-        return self.chomp(line[:next]), self.flatten_tags(taglist), self.chomp(line[next:])
-
-    def get_next_token(self):
+    def get_next_token(self, line=''):
         # snag the next token from the line
-        line = self.read_line()+' '
+        from_stdin = False
+        if line == '':
+            from_stdin = True
+            line = self.read_line()
+
         # print "got new line: '%s'" % line
         while line != '':
-            token, taglist, line = self.tokenize(line+' ')
-            yield token, taglist, line
-            # print "back from yield '%s'"%self.chomp(line[:next])
+            # look for opening delimiters [, {, (
+                # increment depth
+            # look for matching closing delimeters
+                # decrement depth
+            # if depth is 0, split on whitespace and operators
+            try:
+                tokens = self.split_on.split(line)
+                tokens.append('')
+                tokens.append('')
+            except e:
+                raise ParseError("Not a command or value: '%s'"%line)
+            while len(tokens) > 0:
+                token = tokens.pop(0)
+                yield self.chomp(token), line
+            break
 
     def prepare_args(self, fn, inf):
         if debug(): print "prepare_args(%s,%s)"%(fn,str(inf))
@@ -3324,27 +3257,19 @@ class Calculator(object):
         while True:
             arg = ''
             try:
-                for arg,tag,line in self.get_next_token():
-                    if debug(): print arg,line,tag
-                    if 'func' in tag:
-                        cmdidx = tag.index('func')
-                    else:
-                        cmdidx = False
-                    if cmdidx and tag[cmdidx+1] in self.commands_dict:
-                        command = tag[cmdidx+1]
-                    else:
-                        command = arg
+                for arg,line in self.get_next_token():
+                    if debug(): print arg,line
                     if arg == "const":
                         cv = self.commands_dict['const'][0](line)
                         if cv is not None:
                             self.push(cv)
                         break
-                    elif command in self.commands_dict:
+                    elif arg in self.commands_dict:
                         try:
-                            args = self.prepare_args(arg, self.commands_dict[command])
+                            args = self.prepare_args(arg, self.commands_dict[arg])
                             if debug(): print args
                             try:
-                                retval = self.commands_dict[command][0](*args)
+                                retval = self.commands_dict[arg][0](*args)
                             except (ValueError, TypeError), e:
                                 retval = args
                                 if debug():
@@ -3369,7 +3294,7 @@ class Calculator(object):
                         #print "num = '%s', arg = '%s'"%(num,arg)
                         if len(num) > 0:
                             try:
-                                num = self.number(self.chomp(arg), tag)
+                                num = self.number(self.chomp(arg), '')
                                 if num is not None:
                                     self.push(num)
                             except ValueError:
@@ -3402,11 +3327,7 @@ class Calculator(object):
             if args:
                 arg = args[0]
                 if arg not in self.commands_dict:
-                    ok, tags, next = TextTools.tag(arg, self.parser)
-                    tags = self.flatten_tags(tags)
-                    # print ok, tags, next
-                    if ok and 'func' in tags:
-                        arg = tags[tags.index('func')+1]
+                    arg, line = self.get_next_token()
                 if arg in self.commands_dict:
                     if self.commands_dict[arg][0].__doc__ is None:
                         print "No help for %s" % arg
