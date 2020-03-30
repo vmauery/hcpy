@@ -13,13 +13,13 @@ suffixes_nl = { -24:"y", -21:"z", -18:"a", -15:"f", -12:"p", -9:"n",
                  12:"T",  15:"P",  18:"E",  21:"Z",  24:"Y"}
 
 # SI suffixes, letter to number
-suffixes_ln = dict([[val, key] for key, val in suffixes_nl.items()])
+suffixes_ln = dict([[val, key] for key, val in list(suffixes_nl.items())])
 
 if __name__ == "__main__":
     from sys import argv
     if len(argv) > 1:
-        print "Number to letter"
-        for i in suffixes_nl.items(): print "  ", i
-        print "Letter to number"
-        for i in suffixes_ln.items(): print "  ", i
+        print("Number to letter")
+        for i in list(suffixes_nl.items()): print("  ", i)
+        print("Letter to number")
+        for i in list(suffixes_ln.items()): print("  ", i)
     assert len(suffixes_nl) == len(suffixes_ln)

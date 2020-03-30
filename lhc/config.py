@@ -148,9 +148,9 @@ def load():
     except OSError:
         return
     try:
-        execfile(config_file, {}, cfg)
-    except Exception, e:
-        print "Error loading user config: %s" % str(e)
+        exec(compile(open(config_file, "rb").read(), config_file, 'exec'), {}, cfg)
+    except Exception as e:
+        print("Error loading user config: %s" % str(e))
     for k in cfg:
         if k not in defcfg:
             del cfg[k]

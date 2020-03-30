@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
 from mpmath import *
-from debug import *
+from .debug import *
 
 class Stack(object):
     '''This object provides a stack and is intended to be used as an RPN
@@ -130,7 +130,7 @@ class Stack(object):
             fmt = "%(value)s"
         m = []
         lens = len(s)
-        for i in xrange(lens):
+        for i in range(lens):
             if debug():
                 vtype = repr(s[i])[:32]
                 vtype = "%s%s" % (vtype, ' '*(32-len(vtype)))

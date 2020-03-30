@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from mpmath import mpf, mp, nan, inf, nstr
 from mpmath.libmp.libmpf import to_digits_exp, fzero, finf, fninf, fnan
-from si import suffixes_nl
+from .si import suffixes_nl
 
 try: from pdb import xx  # pdb.set_trace is xx; easy to find for debugging
 except: pass

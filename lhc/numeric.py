@@ -33,25 +33,24 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 
-from __future__ import division
+
 from mpmath import mpf, mpc, mpi, ctx_iv, eps, mp, pi, root
-from mpformat import mpFormat, inf
-from debug import *
+from .mpformat import mpFormat, inf
+from .debug import *
 import socket
 import time
 import re
-from string import strip
-from si import suffixes_ln
-import config
+from .si import suffixes_ln
+from . import config
 
 try: from pdb import xx  # pdb.set_trace is xx; easy to find for debugging
 except: pass
 
 def isint_native(x):
-    return isinstance(x, (int, long))
+    return isinstance(x, int)
 
 def isint(x):
-    return isinstance(x, (int, long, Zn))
+    return isinstance(x, (int, Zn))
 
 def gcd(a, b):
     '''Determine the greatest common divisor of integers u and v.
@@ -309,7 +308,7 @@ class Rational(object):
             x = abs(x)
         elif isinstance(x, ctx_iv.ivmpf):
             x = x.mid
-        elif isinstance(x, int) or isinstance(x, long):
+        elif isinstance(x, int) or isinstance(x, int):
             x = mpf(x)
         elif isinstance(x, Zn):
             x = mpf(int(x))
@@ -380,9 +379,9 @@ if __name__ == "__main__":
 
     def gcd_tests():
         assert(gcd(8, 12) == 4)
-        assert(gcd(8L, 12) == 4)
-        assert(gcd(8, 12L) == 4)
-        assert(gcd(8L, 12L) == 4)
+        assert(gcd(8, 12) == 4)
+        assert(gcd(8, 12) == 4)
+        assert(gcd(8, 12) == 4)
 
     def generalTests():
         three = Rational(3)
@@ -417,7 +416,7 @@ if __name__ == "__main__":
         try:
             r = Rational(5, 0)
             raise Exception("Fail: didn't detect zero denominator.")
-        except ZeroDivisionError, detail:
+        except ZeroDivisionError as detail:
             pass
 
     def no_diff(a, b):
@@ -541,16 +540,16 @@ if __name__ == "__main__":
         shown up to 1000 digits (but it only goes to 100 for speed).
         '''
         factor = mpf(3.1)
-        for digits in xrange(5, 100, 5):
+        for digits in range(5, 100, 5):
             mp.dps = digits
             r = Rational()
             approx = r.frac(pi)
             num = mpf(approx.n)/approx.d
             #assert abs(pi - num) < factor*mpf(10)**(-digits)
             if abs(pi - num) > factor*mpf(10)**(-digits):
-                print "digits", digits,
+                print("digits", digits, end=' ')
                 a = str(abs(pi - num))
-                print a[:6], a[-6:]
+                print(a[:6], a[-6:])
     generalTests()
     mixedTests()
     errorTests()
@@ -604,9 +603,9 @@ Uns binary 2's comp
 
 
 def isint(x):
-    return isinstance(x, int) or isinstance(x, long) or isinstance(x, Zn)
+    return isinstance(x, int) or isinstance(x, int) or isinstance(x, Zn)
 
-class Zn(object):
+class Zn:
     # These characters are used in the str representation of Zn objects
     # Example:  a 4-bit signed value of -2 is given as '-2<4s>'.
     left  = "<"
@@ -641,7 +640,7 @@ class Zn(object):
             self.base = 2**self.num_bits
         if type(value) == str:
             self._set_from_string(value)
-        elif isinstance(value, int) or isinstance(value, long):
+        elif isinstance(value, int) or isinstance(value, int):
             self.value = value
         elif isinstance(value, Zn):
             self.value = value.value
@@ -686,7 +685,7 @@ class Zn(object):
 
     def set_bits(self, bits):
         if not isinstance(bits, int) and \
-           not isinstance(bits, long) and \
+           not isinstance(bits, int) and \
            not isinstance(bits, Zn):
             msg = "%sNumber of bits must be an integer"
             raise ValueError(msg % fln())
@@ -719,7 +718,7 @@ class Zn(object):
     signed = property(get_signed, set_signed, doc="Signed if True")
 
     def set_value(self, value):
-        if isinstance(value, int) or isinstance(value, long):
+        if isinstance(value, int) or isinstance(value, int):
             self.n = value
         elif isinstance(value, Zn):
             self.n = value.n
@@ -738,7 +737,7 @@ class Zn(object):
 
     def set_negate_zero(self, value):
         msg = "%svalue must be 0, 1, or 2"
-        if not isinstance(value, int) and not isinstance(value, long):
+        if not isinstance(value, int) and not isinstance(value, int):
             raise ValueError(msg % fln())
         if value < 0 or value > 2:
             raise ValueError(msg % fln())
@@ -1057,7 +1056,7 @@ class Zn(object):
 
     def __coerce__(self, other):
         # hmmmmm.... the types we can encounter
-        print "coersion: %s, %s" %(self, other)
+        print("coersion: %s, %s" %(self, other))
         if isint_native(other):
             return self, Zn(other)
         ot = type(other)
@@ -1067,7 +1066,7 @@ class Zn(object):
             return mpf(self.value), other
         if isint_native(other):
             return self, Zn(other)
-        print "Zn could not coerce type '%s'"%str(ot)
+        print("Zn could not coerce type '%s'"%str(ot))
         return None
 
     def __add__(self, y):
@@ -1206,7 +1205,7 @@ class Zn(object):
             if self.value < y.value:  return -1
             if self.value == y.value: return 0
             else:                     return 1
-        elif isinstance(y, int) or isinstance(y, long):
+        elif isinstance(y, int) or isinstance(y, int):
             if self.value < y:  return -1
             if self.value == y: return 0
             else:               return 1
@@ -1216,6 +1215,59 @@ class Zn(object):
             else:                    return 1
         else:
             return -1
+
+    def __lt__(self, y):
+        if isinstance(y, Zn):
+            return self.value < y.value
+        elif isinstance(y, int) or isinstance(y, int):
+            return self.value < y
+        elif isinstance(y, mpf):
+            return mpf(self.value) < y
+        else:
+            raise UnknownOperation()
+
+    def __le__(self, y):
+        if isinstance(y, Zn):
+            return self.value <= y.value
+        elif isinstance(y, int) or isinstance(y, int):
+            return self.value <= y
+        elif isinstance(y, mpf):
+            return mpf(self.value) <= y
+        else:
+            raise UnknownOperation()
+
+    def __gt__(self, y):
+        if isinstance(y, Zn):
+            return self.value > y.value
+        elif isinstance(y, int) or isinstance(y, int):
+            return self.value > y
+        elif isinstance(y, mpf):
+            return mpf(self.value) > y
+        else:
+            raise UnknownOperation()
+
+    def __ge__(self, y):
+        if isinstance(y, Zn):
+            return self.value >= y.value
+        elif isinstance(y, int) or isinstance(y, int):
+            return self.value >= y
+        elif isinstance(y, mpf):
+            return mpf(self.value) >= y
+        else:
+            raise UnknownOperation()
+
+    def __eq__(self, y):
+        if isinstance(y, Zn):
+            return self.value == y.value
+        elif isinstance(y, int) or isinstance(y, int):
+            return self.value == y
+        elif isinstance(y, mpf):
+            return mpf(self.value) == y
+        else:
+            raise UnknownOperation()
+
+    def __ne__(self, y):
+        return not self.__eq__(y)
 
     def __and__(self, y):
         y1, x1 = self._auto_cast(y)
@@ -1443,7 +1495,7 @@ if __name__ == "__main__":
         Zn().signed = True
         Zn().C_division = False
         m = 2**n >> 1
-        it = xrange(-m, m, step)
+        it = range(-m, m, step)
         for i in it:
             for j in it:
                 x, y = Zn(i), Zn(j)
@@ -1457,7 +1509,7 @@ if __name__ == "__main__":
         Zn().signed = False
         Zn().C_division = False
         b = 2**n
-        it = xrange(0, b, step)
+        it = range(0, b, step)
         for i in it:
             for j in it:
                 x, y = Zn(i), Zn(j)
@@ -1471,7 +1523,7 @@ if __name__ == "__main__":
         Zn().signed = True
         Zn().C_division = True
         m = 2**n >> 1
-        it = xrange(-m, m, step)
+        it = range(-m, m, step)
         for i in it:
             for j in it:
                 x, y = Zn(i), Zn(j)
@@ -1486,7 +1538,7 @@ if __name__ == "__main__":
         Zn().bits = n
         Zn().signed = False
         Zn().C_division = True
-        it = xrange(0, 2**n, step)
+        it = range(0, 2**n, step)
         for i in it:
             for j in it:
                 x, y = Zn(i), Zn(j)
@@ -1514,13 +1566,13 @@ if __name__ == "__main__":
             w = Zn(u.value); w <<= v; assert w == Zn((x << y) % (Zn.high_unsigned - 1))
             w = Zn(u.value); w >>= v; assert w == Zn(x >> y)
         n = Zn.high_unsigned
-        for i in xrange(n):
-            for j in xrange(n):
+        for i in range(n):
+            for j in range(n):
                 twiddle(i, j, True)
                 twiddle(i, j, False)
         n = Zn.high_signed
-        for i in xrange(-n, n):
-            for j in xrange(-n, n):
+        for i in range(-n, n):
+            for j in range(-n, n):
                 twiddle(i, j, True)
                 twiddle(i, j, False)
     def Disallowed():
@@ -1545,10 +1597,10 @@ if __name__ == "__main__":
         )
         t = 3
         for op, opname in oplist:
-            for arg in (t, long(t), float(t), complex(t, t)):
+            for arg in (t, int(t), float(t), complex(t, t)):
                 try: y = op(arg, x); assert False, opname
                 except TypeError: pass
-                if arg != t and arg != long(t):
+                if arg != t and arg != int(t):
                     try: y = op(x, arg); assert False, opname
                     except TypeError: pass
     def TestChangingNumberOfBits():
@@ -1614,7 +1666,7 @@ if __name__ == "__main__":
             assert x.n == bits3
             x.bits = 2
             assert x.n == bits2
-    for n in xrange(1, 6):
+    for n in range(1, 6):
         TestSignedPythonArithmetic(n)
         TestUnsignedPythonArithmetic(n)
         TestSignedCArithmetic(n)
@@ -1660,7 +1712,7 @@ class Julian(object):
         "Jan" : 1, "Feb" : 2, "Mar" : 3, "Apr" : 4, "May" : 5, "Jun" : 6,
         "Jul" : 7, "Aug" : 8, "Sep" : 9, "Oct" : 10, "Nov" : 11, "Dec" : 12,
     }
-    name_months = dict([[val, key] for key, val in month_names.items()])
+    name_months = dict([[val, key] for key, val in list(month_names.items())])
 
     # This is a bit of a hack, but it is intended to allow the
     # calculator to communicate how Julian dates expressed as interval
@@ -1726,7 +1778,7 @@ class Julian(object):
             interval.
         '''
         if isinstance(s, int) or \
-           isinstance(s, long) or \
+           isinstance(s, int) or \
            isinstance(s, Zn):
             self.value = mpf(int(s))
         elif isinstance(s, Rational):
@@ -1735,7 +1787,7 @@ class Julian(object):
             self.value = s
         elif isinstance(s, ctx_iv.ivmpf):
             self.value = s
-        elif isinstance(s, (str, unicode)):
+        elif isinstance(s, str):
             y, M, d, h, m, s = self._convert_string(s.strip())
             self.value = self._to_julian(y, M, d, h, m, s)
         else:
@@ -1848,7 +1900,7 @@ class Julian(object):
         if now == "today":
             return y, M, d, 0, 0, mpf("0")
         elif now == "now":
-            fp = mpf(nowtime) - long(nowtime)
+            fp = mpf(nowtime) - int(nowtime)
             s = mpf(s) + fp
             return y, M, d, h, m, s
         else:
@@ -1910,7 +1962,7 @@ class Julian(object):
             if int(hour) != hour: msg = "Hour needs to be an integer"
             if int(minute) != minute: msg = "Minute needs to be an integer"
             if not isinstance(second, int) and \
-               not isinstance(second, long) and \
+               not isinstance(second, int) and \
                not isinstance(second, Zn) and \
                not isinstance(second, mpf):
                 msg = "Second not of proper type"
@@ -1961,7 +2013,7 @@ class Julian(object):
         '''Rule is on page 62 of Meeus.  In the Julian calendar, a
         year is a leap year if it is divisible by 4.
         '''
-        if not (isinstance(y, int) or isinstance(y, long) or isinstance(y, Zn)):
+        if not (isinstance(y, int) or isinstance(y, int) or isinstance(y, Zn)):
             raise ValueError("%sYear must be an integer" % fln())
         if y <= 1582:
             return (y % 4 == 0)
@@ -2098,7 +2150,7 @@ class Julian(object):
         return "Julian(" + repr(self.value) + ")"
 
     def _convert_to_mpf_or_mpi(self, n):
-        if isinstance(n, int) or isinstance(n, long):
+        if isinstance(n, int) or isinstance(n, int):
             return mpf(n)
         if isinstance(n, Zn):
             return mpf(int(n))
@@ -2441,7 +2493,7 @@ class Vector(object):
 
     def __add__(self, other):
         if isinstance(other, Vector) and len(other) == len(self.items):
-            return Vector(map(self.plus, self.items, other.items))
+            return Vector(list(map(self.plus, self.items, other.items)))
         raise TypeError("Vector addition requires two vectors of the same size")
 
     def __rsub__(self, other):
@@ -2449,7 +2501,7 @@ class Vector(object):
 
     def __sub__(self, other):
         if isinstance(other, Vector) and len(other) == len(self.items):
-            return Vector(map(self.minus, self.items, other.items))
+            return Vector(list(map(self.minus, self.items, other.items)))
         raise TypeError("Vector subtraction requires two vectors of the same size")
 
     def __rmul__(self, other):
@@ -2558,7 +2610,7 @@ class Number(object):
                     self.V,    # vector
                 ):
             x = func(s)
-            if x != None:
+            if x is not None:
                 if suffix == 1:
                     return x
                 if isint(x):
@@ -2693,8 +2745,8 @@ class Number(object):
                 if ip6.match(s):
                     ps = socket.inet_pton(socket.AF_INET6, s)
                     return ipaddr(unpack(ps), cidr, 'ipv6')
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             pass
         return None
 
@@ -2834,7 +2886,7 @@ class Number(object):
         e = ValueError("Improperly formed interval number '%s'" %s)
         s = s.replace(" ", "")
         if "+-" in s:
-            n = [mpf(strip(i)) for i in s.split("+-")]
+            n = [mpf(i.strip()) for i in s.split("+-")]
             return mpi(n[0] - n[1], n[0] + n[1])
         elif "(" in s:
             if s[0] == "(":  # Don't confuse with a complex number (x,y)
@@ -2848,7 +2900,7 @@ class Number(object):
                     raise e
                 percent = True
                 s = s.replace("%", "")
-            a, p = [mpf(strip(i)) for i in s.split("(")]
+            a, p = [mpf(i.strip()) for i in s.split("(")]
             d = p
             if percent:
                 d = a*p/mpf(100)
@@ -2858,7 +2910,7 @@ class Number(object):
             if "]" not in s: raise e
             s = s.replace("[", "")
             s = s.replace("]", "")
-            n = [mpf(strip(i)) for i in s.split(",")]
+            n = [mpf(i.strip()) for i in s.split(",")]
             return mpi(n[0], n[1])
         else:
             return None
@@ -2992,17 +3044,17 @@ if __name__ == "__main__":
         for numstr in nums[number]:
             num = n(numstr)
             if num != number:
-                print("Error for '%s'" % numstr)
-                print("  Should be %s" % str(number))
-                print("  Got       %s" % str(num))
+                print(("Error for '%s'" % numstr))
+                print(("  Should be %s" % str(number)))
+                print(("  Got       %s" % str(num)))
                 status += 1
     for number in mpi_tests:
         for numstr in mpi_tests[number]:
             num = n(numstr)
             if (num.a != number.a) and (num.b != number.b):
-                print("Error for '%s'" % numstr)
-                print("  Should be %s" % str(number))
-                print("  Got       %s" % str(num))
+                print(("Error for '%s'" % numstr))
+                print(("  Should be %s" % str(number)))
+                print(("  Got       %s" % str(num)))
                 status += 1
     exit(status)
 

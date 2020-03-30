@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo python setup.py install --prefix=/usr/local
+sudo python3 setup.py install --prefix=/usr/local

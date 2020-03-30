@@ -35,8 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # interest you.
 
 from mpmath import mpf, mpi
-from StringIO import StringIO
-from string import strip
+from io import StringIO
 
 '''
 This file contains and constructs interval numbers from selected physical
@@ -421,11 +420,11 @@ def ParseRawData(show=False):
     constants = {}
     fix = 1
     for line in lines:
-        line = strip(line)
+        line = line.strip()
         if not line:
             continue
         a, b = locations["name"]
-        name = strip(line[a:b])
+        name = line[a:b].strip()
         a, b = locations["value"]
         value = Compact(line[a:b])
         a, b = locations["uncertainty"]
@@ -443,14 +442,14 @@ def ParseRawData(show=False):
             else:
                 num = mpi(x-dx, x+dx)
             constants[name] = num
-        except Exception, e:
-            print name
-            print "  ", str(e)
-    names = constants.keys()
+        except Exception as e:
+            print(name)
+            print("  ", str(e))
+    names = list(constants.keys())
     names.sort()
     if show:
         for name in names:
-            print name
+            print(name)
     return constants
 
 def ConstructConstants():
@@ -521,7 +520,7 @@ def main(display):
     if s[-1] == nl: s = s[:-1]  # display provides last nl
     while True:
         display.msg(s)
-        response = raw_input("? ").strip()
+        response = input("? ").strip()
         if response == "q":
             return None
         try:
@@ -532,6 +531,6 @@ def main(display):
             display.msg("Input not recognized.  Try again.  q to exit.")
 
 if __name__ == "__main__":
-    from display import Display
+    from .display import Display
     display = Display()
     main(display)

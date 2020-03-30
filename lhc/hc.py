@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # :exec set tabstop=4 softtab expandtab encoding=utf8 :
 
 """
@@ -35,17 +35,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #----------------------------------
 # Python library stuff
-from __future__ import division
-import __builtin__
+
+import builtins
 import sys, getopt, os, time, readline
 from socket import htonl
 from atexit import register as atexit
-from string import strip
 import traceback
 import re as regex
 from tempfile import mkstemp
-from debug import *
-import config
+from .debug import *
+from . import config
 
 try: from pdb import xx  # pdb.set_trace is xx; easy to find for debugging
 except: pass
@@ -57,27 +56,27 @@ try:
     from simpleparse.stt import TextTools
     from simpleparse import generator
 except ImportError:
-    print """
+    print("""
 This is a complex program that requires several external python
 libraries.  Please install mpmath, simpleparse
 
-apt-get install python-mpmath python-simpleparse python-simpleparse-mxtexttools
+apt-get install python3-mpmath python3-simpleparse python3-simpleparse-mxtexttools
 
-"""
+""")
     sys.exit(1)
 
 #----------------------------------
 # Modules needed in our package
-from numeric import *
-from stack import Stack
-from mpformat import mpFormat
-import constants
-import console
+from .numeric import *
+from .stack import Stack
+from .mpformat import mpFormat
+from . import constants
+from . import console
 
 # You may create your own display (GUI, curses, etc.) by derivation.  The
 # default Display object just prints to stdout and should work with any
 # console.
-from display import Display
+from .display import Display
 
 out = sys.stdout.write
 err = sys.stderr.write
@@ -381,7 +380,7 @@ class Calculator(object):
             atexit(self.cleanup)
 
         defined_functions = ["'nop'"]
-        funcs = self.commands_dict.keys()
+        funcs = list(self.commands_dict.keys())
         funcs.sort(reverse=True)
         self.chomppre = regex.compile(r"^\s*")
         self.chomppost = regex.compile(r"\s*$")
@@ -415,7 +414,7 @@ class Calculator(object):
         if options.version:
             self.display.msg("hc version 7 (29 Mar 2012)")
         if not self.process_stdin and \
-                __builtin__.type(config.cfg['console_title']) is str:
+                builtins.type(config.cfg['console_title']) is str:
             console.set_title(config.cfg['console_title'])
 
     #---------------------------------------------------------------------------
@@ -494,9 +493,9 @@ class Calculator(object):
         self.TypeCheck(x, y)
         try:
             return y + x
-        except TypeError, e:
+        except TypeError as e:
             raise e
-        except Exception, e:
+        except Exception as e:
             self.errors.append(str(e))
             return x + y
 
@@ -833,7 +832,7 @@ class Calculator(object):
 
     Returns all the xth roots of y
         """
-        return [ self.root(y, x, k) for k in xrange(x) ]
+        return [ self.root(y, x, k) for k in range(x) ]
 
     def square(self, x):
         """
@@ -867,7 +866,7 @@ class Calculator(object):
             else:
                 if x > 1:
                     y = 1
-                    for i in xrange(2, x+1):
+                    for i in range(2, x+1):
                         y *= i
                     self.factorial_cache[x] = y
                     return y
@@ -889,7 +888,7 @@ class Calculator(object):
         try:
             for x in args:
                 s = self.add(s, x)
-        except Exception, e:
+        except Exception as e:
             self.display.msg("%sStack is not large enough, %s" % (fln(), e))
             return None
         return s
@@ -1449,11 +1448,11 @@ class Calculator(object):
         while name == '' and offset < winnowed_size:
             options = []
             top = min(offset + 24, winnowed_size) - offset
-            for i in xrange(1, top+1):
+            for i in range(1, top+1):
                 ck = keys[clist[offset+i-1][1]]
                 options.append("% 2d: %s" % (i, ck))
             self.display.msg('\n'.join(options))
-            name = self.chomp(raw_input(prompt % (winnowed_size - (offset + top))))
+            name = self.chomp(input(prompt % (winnowed_size - (offset + top))))
             if name != '':
                 if name == 'q':
                     return None
@@ -1465,7 +1464,7 @@ class Calculator(object):
                         return self.constants[keys[idx]]
                     self.errors.append("Invalid selection: %d"%name)
                     return None
-                except ValueError, e:
+                except ValueError as e:
                     self.errors.append("Invalid selection: %s"%name)
                     return None
             offset += 24
@@ -1477,22 +1476,22 @@ class Calculator(object):
 
     Presents a list of constants to choose from
         """
-        ord_names = self.constants.keys()
+        ord_names = list(self.constants.keys())
         ord_names.sort(key=str.lower)
         lc_names = [ n.lower() for n in ord_names ]
 
         line = self.chomp(line)
         if line == '':
-            name = self.chomp(raw_input("Type constant name (or part) or * to list: "))
+            name = self.chomp(input("Type constant name (or part) or * to list: "))
             if name == '': return None
         else:
             name = line
         if name == '*':
-            winnowed = [ (lc_names[i], i) for i in xrange(len(lc_names)) ]
+            winnowed = [ (lc_names[i], i) for i in range(len(lc_names)) ]
             return self.choose_a_const(winnowed, ord_names)
         else:
             lc_name = name.lower()
-            winnowed = [ (lc_names[i], i) for i in xrange(len(lc_names)) if lc_name in lc_names[i] ]
+            winnowed = [ (lc_names[i], i) for i in range(len(lc_names)) if lc_name in lc_names[i] ]
             if len(winnowed) == 0:
                 self.errors.append("No constant like '%s'"%name)
                 return None
@@ -1606,7 +1605,7 @@ class Calculator(object):
 
     Push the saved last x back onto the stack
         """
-        assert self.stack.lastx != None, "Bug:  stack.lastx is None"
+        assert self.stack.lastx is not None, "Bug:  stack.lastx is None"
         return self.stack.lastx
 
 
@@ -1724,7 +1723,7 @@ class Calculator(object):
             except:
                 pass
             return Convert(x, newtype, digits)
-        except Exception, e:
+        except Exception as e:
             self.display.msg("%sCouldn't perform conversion" % fln())
             raise e
 
@@ -2035,7 +2034,7 @@ class Calculator(object):
                                2
 
         """
-        print self.rsa_info.__doc__
+        print(self.rsa_info.__doc__)
 
         return None
 
@@ -2049,12 +2048,12 @@ class Calculator(object):
             raise TypeError("operand to factor must be an integer")
 
         facts = []
-        maxf = long(self.sqrt(x))
-        n = long(2)
+        maxf = int(self.sqrt(x))
+        n = int(2)
         while n <= maxf:
             if (x % n) == 0:
                 facts.append(Zn(n))
-                o = long(x)//n
+                o = int(x)//n
                 facts.append(Zn(o))
             n += 1
         facts.sort()
@@ -2069,12 +2068,12 @@ class Calculator(object):
         fx = 0
         if not isint(x) or x > 1000 or x < 0:
             if isint(x):
-                x = long(x)
+                x = int(x)
             # direct calculation with Binet's equation
             phi = (self.sqrt(5) + 1)/2
             fx = (self.power(phi, x) - self.power(-phi, -x))/(phi * 2 - 1)
             if isint(x):
-                fx = long(fx)
+                fx = int(fx)
         else:
             if x == 0:
                 return 0
@@ -2602,7 +2601,7 @@ class Calculator(object):
         config.cfg["line_width"],height = console.size()
 
     def GetConfiguration(self):
-        import config
+        from . import config
         self.GetLineWidth()
         self.ConfigChanged()
         us = "Using default configuration"
@@ -2613,7 +2612,7 @@ class Calculator(object):
                 try:
                     d = {}
                     p = GetFullPath(c)
-                    execfile(p, d, d)
+                    exec(compile(open(p, "rb").read(), p, 'exec'), d, d)
                     config = d["cfg"]
                     self.ConfigChanged()
                 except:
@@ -2625,7 +2624,7 @@ class Calculator(object):
                 try:
                     d = {}
                     p = GetFullPath(r)
-                    execfile(p, d, d)
+                    exec(compile(open(p, "rb").read(), p, 'exec'), d, d)
                     self.registers = d["registers"]
                 except:
                     msg = "%sCould not read and execute register file:"  % fln() + \
@@ -2635,7 +2634,7 @@ class Calculator(object):
                 try:
                     d = {}
                     p = GetFullPath(s)
-                    execfile(p, d, d)
+                    exec(compile(open(p, "rb").read(), p, 'exec'), d, d)
                     global stack
                     self.stack.stack = d["mystack"]
                 except:
@@ -2661,7 +2660,7 @@ class Calculator(object):
         string returned will be of length desired_length or one less.
         '''
         if type(s) is not str:
-            print "eek... EllipsizeString did not receive a string, but a %s"%type(s)
+            print("eek... EllipsizeString did not receive a string, but a %s"%type(s))
             s = str(s)
         had_exponent = "e" in s or "E" in s
         had_dp = "." in s
@@ -2702,9 +2701,9 @@ class Calculator(object):
             if im == "dec":
                 s = str(x)
             elif im == "hex":
-                s = hex(x)
+                s = hex(int(x))
             elif im == "oct":
-                s = oct(x)
+                s = oct(int(x))
             elif im == "bin":
                 s = x.bin()
             elif im == "roman":
@@ -2904,7 +2903,7 @@ class Calculator(object):
                 p(indent + s + "," + nl)
             p("]" + nl)
             f.close()
-        except Exception, e:
+        except Exception as e:
             msg = ("%sError trying to write list '%s':" % (fln(), name)) + nl + str(e)
             self.display.msg(msg)
             raise
@@ -2919,7 +2918,7 @@ class Calculator(object):
             p("from julian import Julian" + nl)
             p("mp.dps = " + str(mp.dps) + nl + nl)
             p(name + " = {" + nl)
-            keys = dictionary.keys()
+            keys = list(dictionary.keys())
             keys.sort()
             indent = "  "
             for key in keys:
@@ -2928,7 +2927,7 @@ class Calculator(object):
                 p(indent + '"' + key + '"' + " : " + s + "," + nl)
             p("}" + nl)
             f.close()
-        except Exception, e:
+        except Exception as e:
             msg = ("%sError trying to write dictionary '%s':" % (fln(), name)) + nl + str(e)
             self.display.msg(msg)
             raise
@@ -2941,7 +2940,7 @@ class Calculator(object):
         """
         if not self.registers:
             raise ValueError("%sThere are no registers defined" % fln())
-        names = self.registers.keys()
+        names = list(self.registers.keys())
         names.sort()
         lengths = [len(name) for name in names]
         fmt = "%%-%ds  %%s\n" % max(lengths)
@@ -2970,7 +2969,7 @@ class Calculator(object):
                             finished = True
                     if finished:
                         raise Exception("%sGot a quit command" % fln())
-                except Exception, e:
+                except Exception as e:
                     msg = "%sFor environment variable '%s', got exception:" + nl
                     self.display.msg(msg % (fln(), var) + str(e))
 
@@ -2983,15 +2982,15 @@ class Calculator(object):
         # Look for commands that don't have associated help strings
         method = regex.compile(r"<bound method [_a-z][_a-z0-9]*[.]([^ ]*) of .*", regex.I)
         undocumented = []
-        for f in self.commands_dict.keys():
+        for f in list(self.commands_dict.keys()):
             if self.commands_dict[f][0].__doc__ is None:
                 name = method.match(self.commands_dict[f][0].__str__()).groups()[0]
                 undocumented.append(name)
         if len(undocumented):
-            print "undocumented functions: %s" % ' '.join(undocumented)
+            print("undocumented functions: %s" % ' '.join(undocumented))
 
     def GetRegisterName(self, cmd):
-        cmd = strip(cmd)
+        cmd = cmd.strip()
         if len(cmd) < 2:
             raise ValueError("%sYou must give a register name" % fln())
         return cmd[1:]
@@ -3162,10 +3161,10 @@ class Calculator(object):
         else:
             while True:
                 try:
-                    line = raw_input(config.cfg["prompt"])
+                    line = input(config.cfg["prompt"])
                     break
                 except KeyboardInterrupt:
-                    print '^C'
+                    print('^C')
         # it looks like readline automatically adds stuff to history
         #readline.add_history(line)
         if line and line[-1] == nl:
@@ -3216,7 +3215,7 @@ class Calculator(object):
             break
 
     def prepare_args(self, fn, inf):
-        if debug(): print "prepare_args(%s,%s)"%(fn,str(inf))
+        if debug(): print("prepare_args(%s,%s)"%(fn,str(inf)))
         args = []
         v = None
         n = inf[1]
@@ -3258,7 +3257,7 @@ class Calculator(object):
             arg = ''
             try:
                 for arg,line in self.get_next_token():
-                    if debug(): print arg,line
+                    if debug(): print(arg,line)
                     if arg == "const":
                         cv = self.commands_dict['const'][0](line)
                         if cv is not None:
@@ -3267,16 +3266,16 @@ class Calculator(object):
                     elif arg in self.commands_dict:
                         try:
                             args = self.prepare_args(arg, self.commands_dict[arg])
-                            if debug(): print args
+                            if debug(): print(args)
                             try:
                                 retval = self.commands_dict[arg][0](*args)
-                            except (ValueError, TypeError), e:
+                            except (ValueError, TypeError) as e:
                                 retval = args
                                 if debug():
                                     self.errors.append(traceback.format_exc())
                                 else:
                                     self.errors.append(str(e))
-                        except (IndexError, TypeError), e:
+                        except (IndexError, TypeError) as e:
                             self.errors.append(str(e))
                             continue
                         if not isiterable(retval):
@@ -3305,11 +3304,11 @@ class Calculator(object):
                 break
             except ParseError:
                 type,value,tb = sys.exc_info()
-                print "parse error:\n%s" % value
+                print("parse error:\n%s" % value)
             except SystemExit:
                 raise
             except:
-                print "Something bad happened.  Don't do that again!"
+                print("Something bad happened.  Don't do that again!")
                 type,value,tb = sys.exc_info()
                 traceback.print_exception(type, value, tb, None, sys.stdout)
         readline.write_history_file()
@@ -3330,15 +3329,15 @@ class Calculator(object):
                     arg, line = self.get_next_token()
                 if arg in self.commands_dict:
                     if self.commands_dict[arg][0].__doc__ is None:
-                        print "No help for %s" % arg
+                        print("No help for %s" % arg)
                     else:
-                        print self.commands_dict[arg][0].__doc__
+                        print(self.commands_dict[arg][0].__doc__)
                 else:
-                    print "unknown function:", arg
+                    print("unknown function:", arg)
                 return
         maxlen = 0
         functions = []
-        for k in self.commands_dict.iterkeys():
+        for k in self.commands_dict.keys():
             maxlen = max(maxlen, len(k))
             functions.append(k)
         functions.sort();
@@ -3346,13 +3345,13 @@ class Calculator(object):
         printed = 0
         for k in functions:
             s = k + " "*maxlen
-            print s[0:maxlen],
+            print(s[0:maxlen], end=' ')
             printed += maxlen
             if printed > (72-maxlen):
-                print
+                print()
                 printed = 0
-        print "\n"
-        print "Delimiters are space, tab, and newline.\n"
+        print("\n")
+        print("Delimiters are space, tab, and newline.\n")
 
     def list_constants(self):
         """
@@ -3360,8 +3359,8 @@ class Calculator(object):
 
     Lists the constants available for use by name
         """
-        for a,k in self.constants.iteritems():
-            print "%s = %s" % (a, k.show(self.base, config.cfg["prec"], self.vector_mode, self.angle_mode))
+        for a,k in self.constants.items():
+            print("%s = %s" % (a, k.show(self.base, config.cfg["prec"], self.vector_mode, self.angle_mode)))
 
     def warranty(self):
         """
@@ -3370,7 +3369,7 @@ class Calculator(object):
     Displays the license and warranty information
         """
         global __doc__
-        print __doc__
+        print(__doc__)
 
     def todo(self):
         """
@@ -3378,11 +3377,11 @@ class Calculator(object):
 
     Displays the things that still need to be fixed
         """
-        print """
+        print("""
 parse vector [2 3]
 parsing of things that should break
     dup23
-        """
+        """)
 
     def quit(self):
         """
@@ -3416,9 +3415,9 @@ def main(argv):
     calculator = Calculator(arg, opt)
     try:
         calculator.run()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         pass
-    except EOFError, e:
+    except EOFError as e:
         pass
-    print
+    print()
     sys.exit(0)
